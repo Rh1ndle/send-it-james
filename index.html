@@ -27,7 +27,7 @@ const SPR = {"hangBack": "iVBORw0KGgoAAAANSUhEUgAAADYAAAB+CAYAAABvTuLcAAAZuElEQV
 // ============================================================
 //  EDIT ME: the personal bits live here
 // ============================================================
-const GAME_TITLE = 'SEND IT, JAMES';
+const GAME_TITLE = 'SEND IT JAMES!';
 const ENDING_MESSAGE = [
   'JAMES.',
   '(Dave writes the real ending here.)',
@@ -35,11 +35,11 @@ const ENDING_MESSAGE = [
 ];
 const ADS = [
   { brand: 'HUSTON BOULDERS',
-    text: 'WE BELIEVE IN VALUE, AND WE PASS IT ON TO YOU. AT HUSTON BOULDERS, WE FIX YOUR GRIP RIGHT AND WE GUARANTEE IT TO A YEEHAW. WE PUT THE YEEHAW BACK IN YOUR FOREARMS.' },
+    text: 'WE BELIEVE IN VALUE, AND WE PASS IT ON TO YOU. AT HUSTON BOULDERS, WE FIX YOUR GRIP RIGHT AND WE GUARANTEE IT TO-O. WE PUT THE YEEEEEHAW BACK IN YOUR FOREARMS AND TRANSMISSION.' },
   { brand: 'CHALK-FI PRO\u2122',
-    text: 'PERFECT FOR MY ACTIVE AND CONNECTED LIFESTYLE. NOW WITH BLUETOOTH. SIDE EFFECTS INCLUDE FALLING, REGRET, AND DAVE.' },
+    text: 'PERFECT FOR MY ACTIVE AND CONNECTED LIFESTYLE. NOW WITH BLUETOOTH. SIDE EFFECTS INCLUDE FALLING, REGRET, AND ANAL FISSURES.' },
   { brand: 'HUSTON BOULDERS: MEMORIAL CITY',
-    text: 'IT IS THE PLACE TO BE. DO YOU BELIEVE IN VALUE? YOU KNOW THAT FEELING. NOW THAT IS THE POWER OF THE HOME DEPOT. WE ARE DOERS. WE GET THINGS DONE.' }
+    text: 'IT IS THE PLACE TO BE. DO YOU BELIEVE IN VALUE? OLD SHOES FOR NEW. OLD LAMPS FOR NEW. OLD GRIP FOR NEW. NOW THAT IS THE POWER OF THE HOME DEPOT. WE ARE DOERS. WE GET THINGS DONE.' }
 ];
 
 // ============================================================
@@ -53,16 +53,22 @@ const DYNO_HOT = 215;        // dyno range with hot air
 const MAT_TOP = 30;
 const BEST_KEY = 'sendItJames.best.v1';
 
+const CARDS = [
+  { rival: 'THE WARM-UP WALL', rec: '99-0', taunt: 'GO AHEAD. GRAB A JUG.', coach: 'GO GET IT, JAMES!', narr: 'ROCKS ABOUND ON THIS LUSH VOLCANIC ISLE.' },
+  { rival: 'THE COMP WALL', rec: '142-0', taunt: "THE CROWD IS WATCHING. DON'T LOOK DOWN.", coach: "DON'T LOOK DOWN, JOHNNY!" },
+  { rival: 'THE ONION PATCH', rec: '999-0', taunt: 'DAVE HATES ONIONS. YOU WILL TOO.', coach: 'NOT THE ONIONS!' }
+];
+
 const ROUTES = [
-  { name: 'V0  WARM-UP', sub: 'HUSTON BOULDERS', n: 14, step: [44, 62], seed: 11,
+  { name: 'WARM-UP', sub: 'HUSTON BOULDERS', n: 14, step: [44, 62], seed: 11, decoy: 0.22,
     types: { jug: 0.85, norm: 0.15 }, haz: 0, hazTypes: [] },
-  { name: 'V1  COMP NIGHT', sub: 'DON\'T LOOK DOWN', n: 22, step: [46, 66], seed: 27,
+  { name: 'COMP NIGHT', sub: 'DON\'T LOOK DOWN', n: 22, step: [46, 66], seed: 27, decoy: 0.5,
     types: { jug: 0.25, norm: 0.4, crimp: 0.35 }, haz: 6.0, hazTypes: ['floppy', 'mug', 'bucket'] },
-  { name: 'V2  ONION PATCH', sub: 'DAVE HATES ONIONS', n: 28, step: [48, 68], seed: 53,
+  { name: 'ONION PATCH', sub: 'DAVE HATES ONIONS', n: 28, step: [48, 68], seed: 53, decoy: 0.6,
     types: { norm: 0.3, crimp: 0.3, greasy: 0.2, crumbly: 0.2 }, haz: 3.8, hazTypes: ['floppy', 'mug', 'bucket', 'onion', 'onion'] }
 ];
 
-const DRAIN = { jug: 3.5, norm: 6.5, crimp: 11, greasy: 19, crumbly: 6.5, rest: 0, start: 0, top: 1 };
+const DRAIN = { decoy: 26, jug: 3.5, norm: 6.5, crimp: 11, greasy: 19, crumbly: 6.5, rest: 0, start: 0, top: 1 };
 
 // ============================================================
 //  Canvas / layout
@@ -145,7 +151,7 @@ function drawBase(k, x, y, flip) {
 // ============================================================
 //  Pixel-art made in code: holds, hazards, Dave
 // ============================================================
-const HOLD_SIZE = { jug: [28, 18], norm: [24, 15], crimp: [28, 9], greasy: [26, 16], crumbly: [26, 16], rest: [46, 22], start: [34, 20], top: [54, 26] };
+const HOLD_SIZE = { decoy: [26, 16], jug: [28, 18], norm: [24, 15], crimp: [28, 9], greasy: [26, 16], crumbly: [26, 16], rest: [46, 22], start: [34, 20], top: [54, 26] };
 const holdCache = {};
 function makeHold(type, base) {
   const key = type + (base || '');
@@ -154,14 +160,14 @@ function makeHold(type, base) {
   const c = document.createElement('canvas'); c.width = w; c.height = h;
   const x = c.getContext('2d');
   const pal = base ? { d: shade(base, -70), m: base, l: shade(base, 60) }
-    : (type === 'top' ? { d: '#a16207', m: '#facc15', l: '#fef08a' } : { d: '#3f6212', m: '#84cc16', l: '#d9f99d' });
+    : (type === 'top' ? { d: '#a16207', m: '#facc15', l: '#fef08a' } : (type === 'decoy' ? { d: '#475569', m: '#94a3b8', l: '#e2e8f0' } : { d: '#3f6212', m: '#84cc16', l: '#d9f99d' }));
   const cx = (w - 1) / 2, cy = (h - 1) / 2, rx = w / 2, ry = h / 2;
   for (let py = 0; py < h; py++) for (let px = 0; px < w; px++) {
     const dx = (px - cx) / rx, dy = (py - cy) / ry, r = dx * dx + dy * dy;
     if (r > 1) continue;
     const inner = ((px - cx) / (rx - 1.4)) ** 2 + ((py - cy) / (ry - 1.4)) ** 2;
     let col;
-    if (inner > 1) col = '#14240a';
+    if (inner > 1) col = type === 'decoy' ? '#1e293b' : '#14240a';
     else {
       const t = -0.55 * dx - 0.8 * dy;
       col = t > 0.55 ? pal.l : (t > -0.15 ? pal.m : pal.d);
@@ -215,9 +221,8 @@ function drawPixelThing(type, x, y) { // centre at world x,y ; 12x12 grid
   }
 }
 
-function drawDave(x, yBase, say) {
-  const s = PXU * u * 3;
-  const ox = Math.round(x * u), by = Math.round(wy(yBase));
+function drawDave(x, yBase, say) { drawDaveAt(Math.round(x * u), Math.round(wy(yBase)), PXU * u * 3, say); }
+function drawDaveAt(ox, by, s, say) {
   const R = (px, py, w, h, col) => { ctx.fillStyle = col; ctx.fillRect(Math.round(ox + px * s), Math.round(by + py * s), Math.ceil(w * s), Math.ceil(h * s)); };
   // 16 wide x 40 tall placeholder, centred, feet at y=0
   R(-4, -40, 8, 4, '#9ca3af');          // grey hair
@@ -245,9 +250,19 @@ function drawDave(x, yBase, say) {
 // ============================================================
 //  Audio (square-wave bleeps + tiny techno loop)
 // ============================================================
-let AC = null, muted = false, musicOn = false, step = 0, nextT = 0;
+let AC = null, muted = false, musicOn = false, MASTER = null, DUCK = null;
+function buildChain(ac) {
+  const comp = ac.createDynamicsCompressor();
+  comp.threshold.value = -16; comp.knee.value = 12; comp.ratio.value = 5; comp.attack.value = 0.003; comp.release.value = 0.2;
+  const master = ac.createGain(); master.gain.value = 0.8;
+  master.connect(comp); comp.connect(ac.destination);
+  const duck = ac.createGain(); duck.gain.value = 1; duck.connect(master);
+  return { master, duck };
+}
 function audioInit() {
-  if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { AC = null; } }
+  if (!AC) {
+    try { AC = new (window.AudioContext || window.webkitAudioContext)(); const c = buildChain(AC); MASTER = c.master; DUCK = c.duck; } catch (e) { AC = null; }
+  }
   if (AC && AC.state === 'suspended') AC.resume();
 }
 function tone(f, d, type, v, f2, delay) {
@@ -259,19 +274,12 @@ function tone(f, d, type, v, f2, delay) {
   if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + d);
   g.gain.setValueAtTime(v || 0.07, t);
   g.gain.exponentialRampToValueAtTime(0.0001, t + d);
-  o.connect(g); g.connect(AC.destination);
+  o.connect(g); g.connect(MASTER);
   o.start(t); o.stop(t + d + 0.02);
 }
-let noiseBuf = null;
 function noise(d, v, delay, hp) {
   if (!AC || muted) return;
-  if (!noiseBuf) { noiseBuf = AC.createBuffer(1, AC.sampleRate * 0.5, AC.sampleRate); const a = noiseBuf.getChannelData(0); for (let i = 0; i < a.length; i++) a[i] = Math.random() * 2 - 1; }
-  const t = AC.currentTime + (delay || 0);
-  const s = AC.createBufferSource(); s.buffer = noiseBuf;
-  const g = AC.createGain(); g.gain.setValueAtTime(v || 0.05, t); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
-  let node = s;
-  if (hp) { const f = AC.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = hp; s.connect(f); node = f; }
-  node.connect(g); g.connect(AC.destination); s.start(t); s.stop(t + d + 0.02);
+  nz(AC, MASTER, { ft: 'highpass', f: hp || 20, t: AC.currentTime + (delay || 0), d, v: v || 0.05 });
 }
 const SFX = {
   grab() { tone(520, 0.07, 'square', 0.06, 880); },
@@ -287,28 +295,148 @@ const SFX = {
   nope() { tone(160, 0.12, 'square', 0.06); },
   blip() { tone(1500, 0.025, 'square', 0.03); }
 };
-function musicTick() {
-  if (!AC || muted || !musicOn) { nextT = 0; return; }
-  const spb = 60 / 132 / 4;
-  if (!nextT || nextT < AC.currentTime) nextT = AC.currentTime + 0.05;
-  while (nextT < AC.currentTime + 0.25) {
-    const t = nextT - AC.currentTime;
-    const st = step % 16;
-    if (st % 4 === 0) tone(140, 0.12, 'sine', 0.13, 45, t);
-    if (st % 4 === 2) noise(0.04, 0.025, t, 6000);
-    const bass = [55, 55, 82, 55, 65, 65, 98, 65][(step >> 1) % 8];
-    if (st % 2 === 0) tone(bass, 0.13, 'square', 0.03, null, t);
-    if (st === 6 || st === 14) tone(bass * 4, 0.08, 'triangle', 0.025, null, t);
-    step++; nextT += spb;
+
+// ---------------- music engine: pure functions of (audioContext, buses, track, step, time) ----------------
+const NOISEBUFS = new WeakMap();
+function nbuf(ac) {
+  let b = NOISEBUFS.get(ac);
+  if (!b) { b = ac.createBuffer(1, ac.sampleRate, ac.sampleRate); const a = b.getChannelData(0); for (let i = 0; i < a.length; i++) a[i] = Math.random() * 2 - 1; NOISEBUFS.set(ac, b); }
+  return b;
+}
+const mf = m => 440 * Math.pow(2, (m - 69) / 12);
+function voice(ac, out, o) {
+  const osc = ac.createOscillator(); osc.type = o.type || 'sawtooth';
+  osc.frequency.setValueAtTime(o.f, o.t);
+  if (o.f2) osc.frequency.exponentialRampToValueAtTime(o.f2, o.t + o.d);
+  if (o.det) osc.detune.value = o.det;
+  const g = ac.createGain(), a = o.a || 0.004;
+  g.gain.setValueAtTime(0.0001, o.t);
+  g.gain.linearRampToValueAtTime(o.v, o.t + a);
+  g.gain.exponentialRampToValueAtTime(0.0001, o.t + o.d);
+  let node = osc;
+  if (o.lp) {
+    const f = ac.createBiquadFilter(); f.type = 'lowpass'; f.Q.value = o.q || 2;
+    f.frequency.setValueAtTime(o.lp, o.t);
+    if (o.lpEnd) f.frequency.exponentialRampToValueAtTime(o.lpEnd, o.t + o.d);
+    osc.connect(f); node = f;
+  }
+  node.connect(g); g.connect(out);
+  osc.start(o.t); osc.stop(o.t + o.d + 0.03);
+}
+function nz(ac, out, o) {
+  const s = ac.createBufferSource(); s.buffer = nbuf(ac); s.loop = true;
+  const f = ac.createBiquadFilter(); f.type = o.ft || 'highpass'; f.Q.value = o.q || 0.7;
+  f.frequency.setValueAtTime(o.f, o.t);
+  if (o.f2) f.frequency.exponentialRampToValueAtTime(o.f2, o.t + o.d);
+  const g = ac.createGain();
+  g.gain.setValueAtTime(0.0001, o.t);
+  g.gain.linearRampToValueAtTime(o.v, o.t + (o.a || 0.002));
+  g.gain.exponentialRampToValueAtTime(0.0001, o.t + o.d);
+  s.connect(f); f.connect(g); g.connect(out);
+  s.start(o.t, Math.random() * 0.5); s.stop(o.t + o.d + 0.03);
+}
+const PENT = [0, 3, 5, 7, 10, 12, 15, 17, 19];
+const C_I = [0, 3, 7], C_VI = [-4, 0, 3], C_III = [3, 7, 10], C_VII = [-2, 2, 5], C_IV = [-7, -4, 0];
+const TRACKS = [
+  { name: 'TITLE', bpm: 118, root: 57, prog: [C_I, C_VI, C_III, C_VII], bass: 'off', motif: [4, -1, -1, 3, -1, 2, -1, -1, 4, -1, 5, -1, 4, -1, 3, -1] },
+  { name: 'V0 WARM-UP', bpm: 124, root: 50, prog: [C_I, C_VII, C_VI, C_VII], bass: 'off', motif: [0, -1, 2, -1, 3, -1, 2, -1, 0, -1, 2, -1, 4, -1, 3, -1] },
+  { name: 'V1 COMP NIGHT', bpm: 130, root: 52, prog: [C_I, C_VI, C_IV, C_VII], bass: 'off', motif: [5, -1, 4, 3, -1, 2, -1, 3, 4, -1, 5, -1, 6, -1, 5, 4] },
+  { name: 'V2 ONION PATCH', bpm: 136, root: 48, prog: [C_I, C_I, C_VI, C_VII], bass: 'roll', motif: [3, -1, 3, 5, -1, 3, 2, -1, 3, -1, 5, 6, -1, 5, 3, -1] },
+  { name: 'DEEP MIX', bpm: 140, root: 42, prog: [C_I, C_I, C_VII, C_VI], bass: 'roll', dark: true, motif: [0, -1, -1, 0, -1, 2, -1, -1, 3, -1, -1, 2, -1, 0, -1, -1] }
+];
+const ARPSEQ = [0, 1, 2, 3, 2, 1, 2, 3, 0, 1, 2, 3, 2, 1, 2, 3];
+function playStep(ac, d, T, g, t) {
+  const sd = 60 / T.bpm / 4, st = g % 16, bar = Math.floor(g / 16) % 32;
+  const chord = T.prog[bar % 4], root = T.root;
+  const brk = bar >= 24 && bar < 28, build = bar >= 28, kickOn = !brk;
+  // kick + sidechain pump
+  if (kickOn && st % 4 === 0) {
+    voice(ac, d.master, { type: 'sine', f: 165, f2: 42, t, d: 0.3, v: 0.95, a: 0.001 });
+    nz(ac, d.master, { ft: 'highpass', f: 2500, t, d: 0.012, v: 0.18 });
+    d.duck.gain.cancelScheduledValues(t);
+    d.duck.gain.setValueAtTime(0.38, t);
+    d.duck.gain.linearRampToValueAtTime(1, t + sd * 3.2);
+  }
+  // hats + clap
+  if (bar >= 2 && kickOn && st % 4 === 2) nz(ac, d.master, { ft: 'highpass', f: 7500, t, d: 0.11, v: 0.06 });
+  if (bar >= 8 && kickOn && st % 2 === 1) nz(ac, d.master, { ft: 'highpass', f: 9000, t, d: 0.03, v: 0.035 });
+  if (bar >= 4 && kickOn && (st === 4 || st === 12)) nz(ac, d.master, { ft: 'bandpass', f: 1800, q: 0.8, t, d: 0.17, v: 0.22 });
+  // bass
+  const bassOn = (bar >= 4 && bar < 24) || build;
+  if (bassOn) {
+    const play = T.bass === 'roll' ? st % 4 !== 0 : st % 4 === 2;
+    if (play) {
+      let m = root + chord[0]; while (m > 47) m -= 12; while (m < 33) m += 12;
+      const f = mf(m);
+      voice(ac, d.duck, { type: 'sawtooth', f, t, d: sd * (T.bass === 'roll' ? 0.9 : 1.8), v: 0.26, lp: 520, lpEnd: 180, q: 4 });
+      voice(ac, d.duck, { type: 'sine', f, t, d: sd * 1.5, v: 0.2 });
+    }
+  }
+  // pad stabs (long chord in the breakdown)
+  if (bar >= 12 && (st === 0 || (!brk && (st === 6 || st === 10)))) {
+    const len = st === 0 ? sd * (brk ? 15 : 5) : sd * 2.2;
+    for (const n of chord) for (const det of [-7, 7]) voice(ac, d.duck, { type: 'sawtooth', f: mf(root + n + 12), det, t, d: len, v: 0.032, lp: T.dark ? 1100 : 1700, q: 1, a: brk && st === 0 ? 0.3 : 0.01 });
+  }
+  // arp with a filter sweep that opens across each phrase
+  if (bar >= 8) {
+    const idx = ARPSEQ[st];
+    const n = idx === 3 ? chord[0] + 12 : chord[idx];
+    const sweep = bar < 24 ? ((bar - 8) % 8) / 7 : (bar - 24) / 7;
+    const lp = (450 + sweep * 3600 + (st % 4 === 0 ? 300 : 0)) * (T.dark ? 0.7 : 1);
+    voice(ac, d.duck, { type: 'square', f: mf(root + n + 12), t, d: sd * 0.9, v: 0.055, lp, q: 3 });
+  }
+  // lead hook
+  if (bar >= 16 && bar < 24) {
+    const mi = T.motif[st];
+    if (mi >= 0) {
+      const f = mf(root + chord[0] + 12 + PENT[mi]);
+      for (const det of [-6, 6]) voice(ac, d.duck, { type: 'square', f, det, t, d: sd * 1.7, v: 0.045, lp: 3500, q: 1 });
+    }
+  }
+  // risers, snare roll, crash
+  if (st === 0) {
+    if (bar === 0 && g > 0) nz(ac, d.master, { ft: 'highpass', f: 5000, t, d: 1.2, v: 0.2 });
+    if (build) nz(ac, d.master, { ft: 'bandpass', f: 600, f2: 7000, q: 2.5, t, d: sd * 16, v: 0.07 + 0.03 * (bar - 28) });
+    if (brk && (bar === 24 || bar === 26)) nz(ac, d.master, { ft: 'bandpass', f: 500, f2: 3000, q: 2, t, d: sd * 32, v: 0.05 });
+  }
+  if (build) {
+    const dens = [4, 2, 2, 1][bar - 28];
+    if (st % dens === 0) nz(ac, d.master, { ft: 'bandpass', f: 2200, q: 0.7, t, d: 0.1, v: 0.1 + 0.012 * st });
   }
 }
+let mStep = 0, mNext = 0, mTrack = 0;
+function setTrack(i) { mTrack = i; mStep = 0; mNext = 0; musicOn = true; }
+function musicTick() {
+  if (!AC || muted || !musicOn) { mNext = 0; return; }
+  const T = TRACKS[mTrack], sd = 60 / T.bpm / 4;
+  if (!mNext || mNext < AC.currentTime) mNext = AC.currentTime + 0.06;
+  while (mNext < AC.currentTime + 0.3) { playStep(AC, { master: MASTER, duck: DUCK }, T, mStep, mNext); mStep++; mNext += sd; }
+}
 setInterval(musicTick, 90);
+// offline render for previews / analysis (returns base64 of 16-bit mono PCM)
+window.__music = {
+  TRACKS,
+  render(i, bars, sr) {
+    const T = TRACKS[i], sd = 60 / T.bpm / 4, total = bars * 16;
+    const OC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+    const oc = new OC(1, Math.ceil((total * sd + 2.5) * sr), sr);
+    const d = buildChain(oc);
+    for (let k = 0; k < total; k++) playStep(oc, d, T, k, k * sd + 0.05);
+    return oc.startRendering().then(buf => {
+      const ch = buf.getChannelData(0), i16 = new Int16Array(ch.length);
+      for (let k = 0; k < ch.length; k++) i16[k] = Math.max(-32768, Math.min(32767, Math.round(ch[k] * 32767)));
+      const u8 = new Uint8Array(i16.buffer); let out = '';
+      for (let k = 0; k < u8.length; k += 0x8000) out += String.fromCharCode.apply(null, u8.subarray(k, k + 0x8000));
+      return btoa(out);
+    });
+  }
+};
 
 // ============================================================
 //  Game state
 // ============================================================
 const G = {
-  state: 'loading', t: 0, routeIdx: 0, score: 0, totalFalls: 0, routeFalls: 0, time: 0,
+  state: 'loading', t: 0, cardT: 0, titleT: 0, routeIdx: 0, score: 0, totalFalls: 0, routeFalls: 0, time: 0,
   holds: [], decoys: [], haz: [], parts: [], cap: null, daveSay: null, daveT: 0,
   camY: 0, shake: 0, flash: 0, retry: false, introT: 0, adIdx: 0, adT: 0, winT: 0,
   hazT: 4, maxId: 0, topY: 0, best: [], endT: 0, sel: null, tear: 0
@@ -339,14 +467,14 @@ function buildRoute(R) {
     x = nx; y += dy;
     holds.push({ x, y, type, id: i, pick });
   }
-  // a few extra live jugs to the side so there's some choice
+  // gray DECOY holds sit right next to the lime route. Grabbing one slips you.
   const extras = [];
   for (let i = 1; i < holds.length - 1; i++) {
-    if (rng() < 0.4) {
+    if (rng() < R.decoy) {
       const side = rng() < 0.5 ? -1 : 1;
-      let ex = holds[i].x + side * (46 + rng() * 22), ey = holds[i].y + 6 + rng() * 22;
-      if (ex < 26 || ex > W0 - 26) ex = holds[i].x - side * 52;
-      extras.push({ x: ex, y: ey, type: rng() < 0.2 ? 'greasy' : 'norm', id: 100 + i, pick: null });
+      let ex = holds[i].x + side * (14 + rng() * 14), ey = holds[i].y + 4 + rng() * 16;
+      if (ex < 26 || ex > W0 - 26) ex = holds[i].x - side * (14 + rng() * 14);
+      extras.push({ x: ex, y: ey, type: 'decoy', id: 100 + i, pick: null });
     }
   }
   G.holds = holds.concat(extras);
@@ -368,16 +496,16 @@ function resetPlayer() {
   G.sel = null;
 }
 
-function startRoute(i, retry) {
+function startRoute(i, retry, skipCard) {
   G.routeIdx = i;
   const R = ROUTES[i];
   buildRoute(R);
   resetPlayer();
   G.time = 0; G.haz = []; G.parts = []; G.hazT = 4; G.retry = false; G.maxId = 0;
   if (!retry) G.routeFalls = 0;
-  G.state = 'intro'; G.introT = 0; G.cap = null; G.daveSay = null;
+  G.state = (retry || skipCard) ? 'intro' : 'card'; G.introT = 0; G.cardT = 0; G.cap = null; G.daveSay = null;
   G.camY = -6;
-  musicOn = true;
+  if (!retry) setTrack(1 + i);
 }
 
 // ============================================================
@@ -430,6 +558,15 @@ function startMove(h, dyno) {
 }
 
 function land(h) {
+  G.sel = null;
+  if (h.type === 'decoy') {
+    P.mode = 'hang'; P.hold = h; P.x = h.x; P.y = h.y; P.hangT = 0; P.warned = false; P.dyno = false; P.streak = 0;
+    P.grip = Math.max(0, P.grip - 38); SFX.hit(); G.shake = 0.25;
+    burst(h.x, h.y, 10, ['#94a3b8', '#e2e8f0'], 50, 0.5);
+    say('WRONG COLOR! LIME ONLY!', '#fca5a5', 1.3, 0.7, 'wrongcolor');
+    if (P.grip <= 0) startFall('grip');
+    return;
+  }
   if (h.id < 100 && h.id > G.maxId) G.maxId = h.id;
   P.mode = 'hang'; P.hold = h; P.x = h.x; P.y = h.y; P.hangT = 0; P.warned = false; P.topT = 0;
   if (h.type === 'rest') P.grip = Math.min(100, P.grip + 8);
@@ -440,7 +577,7 @@ function land(h) {
   SFX.grab();
   burst(h.x, h.y, 5, CHALK_COLS, 40, 0.4);
   if (h.pick) {
-    if (h.pick === 'chalk') { P.chalk = Math.min(5, P.chalk + 1); say('NICE. TAKE IT!', '#d9f99d', 1.2, 1, 'take'); }
+    if (h.pick === 'chalk') { P.chalk = Math.min(5, P.chalk + 1); say('TAKE IT!', '#d9f99d', 1.2, 1, 'take'); }
     else { P.hot = 1; say('HOT AIR LOADED!', '#fde68a', 1.2, 1); }
     h.pick = null; SFX.pick(); G.score += 250;
     return;
@@ -458,7 +595,8 @@ function startFall(why) {
   P.fx = P.x; P.fy = P.y - HERO_H; P.vy = -120; P.bounced = 0; P.dyno = false; P.doomed = false;
   G.routeFalls++; G.totalFalls++; P.streak = 0;
   SFX.fall();
-  say('WOW, WOW, WOW.', '#fca5a5', 1.3, 1, 'wow');
+  if ((why === 'grip' || why === 'crumble' || why === 'dyno') && G.totalFalls % 2 === 1) say('JAMES FEELS A STRANGE PULLING SENSATION...', '#c4b5fd', 2.0, 0.8, 'pulling');
+  else say('WOW, WOW, WOW.', '#fca5a5', 1.3, 1, 'wow');
   if (G.routeFalls === 1 || P.fy > 140) daveSays('JOHNNY!', 1.8);
 }
 
@@ -467,7 +605,9 @@ function winRoute() {
   const bonus = 1000 + Math.round(P.grip) * 5 + Math.max(0, 70 - Math.floor(G.time)) * 20 + (G.routeFalls === 0 ? 1500 : 0);
   G.score += bonus; G.lastBonus = bonus;
   G.state = 'win'; G.winT = 0; P.mode = 'win';
-  say('THIS CUISINE REIGNS SUPREME!', '#fde68a', 2.4, 0.9, 'reigns');
+  const WINS = [['W', 2.4], ['NO CAP, THAT WAS BUSINESS CLASS!', 0.9], ["ISN'T THAT POWERFUL?", 1]];
+  if (G.routeIdx === ROUTES.length - 1) say('THIS CUISINE REIGNS SUPREME!', '#fde68a', 2.4, 0.9, 'reigns');
+  else { const w = WINS[G.routeIdx % WINS.length]; say(w[0], '#fde68a', 2.2, w[1], 'win'); }
   SFX.win();
   burst(W0 / 2, G.camY + VH * 0.6, 60, ['#d9f99d', '#facc15', '#f472b6', '#67e8f9', '#fff'], 120, 1.6, -90);
 }
@@ -480,13 +620,14 @@ function doChalk() {
   SFX.chalk(); say('CHALKED UP', '#f8fafc', 0.8, 0.7);
 }
 
-function bestUp(dir) {
-  // choose a target for keyboard / pad: dir = [dx, dy] in world (up = +y)
-  const me = P.hold; let best = null, bs = 1e9;
+function bestUp(dir, from) {
+  // aim from the current cursor (selected hold, else where you hang). dir = [dx, dy] in world (up = +y)
+  const me = from || P.hold; let best = null, bs = 1e9;
   for (const h of liveHolds()) {
-    if (h === me) continue;
+    if (h === me || h === P.hold) continue;
+    if (Math.hypot(h.x - P.hold.x, h.y - P.hold.y) > (P.hot ? DYNO_HOT : DYNO)) continue;
     const dx = h.x - me.x, dy = h.y - me.y, d = Math.hypot(dx, dy);
-    if (d > (P.hot ? DYNO_HOT : DYNO) || d < 4) continue;
+    if (d < 4) continue;
     const cos = (dx * dir[0] + dy * dir[1]) / d;
     if (cos < 0.35) continue;
     const sc = d * (1.7 - cos) + (d > REACH ? 40 : 0);
@@ -512,11 +653,13 @@ function toggleMute() { muted = !muted; if (!muted) { audioInit(); SFX.blip(); }
 
 function onTap(px, py) {
   audioInit();
-  if (inRect(BTN.mute(), px, py) && G.state !== 'title') { toggleMute(); return; }
+  if (inRect(BTN.mute(), px, py) && G.state !== 'title' && G.state !== 'boot' && G.state !== 'card') { toggleMute(); return; }
   switch (G.state) {
+    case 'boot': setTrack(0); G.state = 'title'; G.titleT = 0; break;
     case 'title': G.score = 0; G.totalFalls = 0; startRoute(0); SFX.pick(); break;
+    case 'card': if (G.cardT > 0.6) { G.state = 'intro'; G.introT = 0; SFX.blip(); } break;
     case 'ad': advanceAd(); break;
-    case 'end': if (G.endT > 1.2) { G.state = 'title'; } break;
+    case 'end': if (G.endT > 1.2) { G.state = 'title'; G.titleT = 0; setTrack(0); } break;
     case 'win': if (G.winT > 2.2) { G.state = 'ad'; G.adIdx = G.routeIdx; G.adT = 0; } break;
     case 'climb':
       if (P.mode === 'lie') { if (G.retry) startRoute(G.routeIdx, true); return; }
@@ -542,13 +685,14 @@ cv.addEventListener('touchstart', e => e.preventDefault(), { passive: false });
 
 function confirmKey() {
   audioInit();
-  if (G.state === 'title' || G.state === 'ad' || G.state === 'end' || G.state === 'win') { onTap(CW / 2, CH / 2); return; }
+  if (G.state === 'boot' || G.state === 'title' || G.state === 'card' || G.state === 'ad' || G.state === 'end' || G.state === 'win') { onTap(CW / 2, CH / 2); return; }
   if (G.state !== 'climb') return;
   if (P.mode === 'lie') { if (G.retry) startRoute(G.routeIdx, true); return; }
   if (P.mode !== 'hang') return;
-  const t = G.sel && !G.sel.broken ? G.sel : bestUp([0, 1]);
+  const t = G.sel && !G.sel.broken ? G.sel : null;
+  if (!t) { say('PICK A HOLD WITH THE ARROWS', '#fde68a', 0.9, 0.55); return; }
   G.sel = null;
-  if (t) attempt(t);
+  attempt(t);
 }
 const KEYDIR = { ArrowUp: [0, 1], ArrowDown: [0, -1], ArrowLeft: [-1, 0], ArrowRight: [1, 0], w: [0, 1], s: [0, -1], a: [-1, 0], d: [1, 0], W: [0, 1], S: [0, -1], A: [-1, 0], D: [1, 0] };
 window.addEventListener('keydown', e => {
@@ -557,7 +701,7 @@ window.addEventListener('keydown', e => {
   const k = e.key;
   if (KEYDIR[k]) {
     e.preventDefault();
-    if (G.state === 'climb' && P.mode === 'hang') { const t = bestUp(KEYDIR[k]); if (t) { G.sel = t; SFX.blip(); } }
+    if (G.state === 'climb' && P.mode === 'hang') { const cur = (G.sel && !G.sel.broken) ? G.sel : P.hold; const t = bestUp(KEYDIR[k], cur); if (t) { G.sel = t; SFX.blip(); } }
   } else if (k === ' ' || k === 'Enter' || k === 'z' || k === 'Z') { e.preventDefault(); confirmKey(); }
   else if (k === 'c' || k === 'C' || k === 'x' || k === 'X') { if (G.state === 'climb') doChalk(); }
   else if (k === 'm' || k === 'M') toggleMute();
@@ -571,7 +715,7 @@ function pollPad() {
     const edge = (name, v) => { const was = padPrev[name]; padPrev[name] = v; return v && !was; };
     const ax = p.axes[0] || 0, ay = p.axes[1] || 0;
     const dirs = [['L', b(14) || ax < -0.5, [-1, 0]], ['R', b(15) || ax > 0.5, [1, 0]], ['U', b(12) || ay < -0.5, [0, 1]], ['D', b(13) || ay > 0.5, [0, -1]]];
-    for (const [n, v, d] of dirs) if (edge(n, v) && G.state === 'climb' && P.mode === 'hang') { const t = bestUp(d); if (t) { G.sel = t; SFX.blip(); } }
+    for (const [n, v, d] of dirs) if (edge(n, v) && G.state === 'climb' && P.mode === 'hang') { const cur = (G.sel && !G.sel.broken) ? G.sel : P.hold; const t = bestUp(d, cur); if (t) { G.sel = t; SFX.blip(); } }
     if (edge('A', b(0))) confirmKey();
     if (edge('X', b(2)) && G.state === 'climb') doChalk();
   }
@@ -624,7 +768,7 @@ function updateClimb(dt) {
       P.fy = MAT_TOP; G.shake = Math.min(0.5, P.vy / 900);
       SFX.thud(); burst(P.fx, MAT_TOP, 14, ['#60a5fa', '#93c5fd', '#fff'], 50, 0.5, -40);
       if (P.bounced < 1 && P.vy > 160) { P.vy = -P.vy * 0.3; P.bounced++; }
-      else { P.mode = 'lie'; P.lieT = 0; say('BWAYNO', '#fca5a5', 1.8, 1.2, 'bwayno'); }
+      else { P.mode = 'lie'; P.lieT = 0; say(G.totalFalls % 2 ? 'NO BWAYNO.' : 'SKILL ISSUE.', '#fca5a5', 1.8, 1.1, 'bwayno'); }
     }
   } else if (P.mode === 'lie') {
     P.lieT += dt;
@@ -675,6 +819,8 @@ function update(dt) {
   G.parts = G.parts.filter(p => p.life > 0);
 
   switch (G.state) {
+    case 'title': G.titleT += dt; break;
+    case 'card': G.cardT += dt; if (G.cardT > 9) { G.state = 'intro'; G.introT = 0; } break;
     case 'intro':
       G.introT += dt;
       { const tb = P.y - VH * 0.34; G.camY += (Math.max(-6, tb) - G.camY) * Math.min(1, dt * 5); }
@@ -768,7 +914,7 @@ function drawHolds() {
     const x = h.x * u, y = wy(h.y);
     const w = c.width * sc, hh = c.height * sc;
     // glow ring on reachable holds
-    if (reachable && h !== P.hold) {
+    if (reachable && h !== P.hold && h.type !== 'decoy' && G.routeIdx < 2) {
       const d = Math.hypot(h.x - P.hold.x, h.y - P.hold.y);
       const ok = d <= REACH, dy = d <= (P.hot ? DYNO_HOT : DYNO);
       if (ok || dy) {
@@ -934,24 +1080,140 @@ function drawTear() {
   ctx.fillRect(0, 0, CW, CH);
 }
 
+function logoFont(px) { return '900 italic ' + Math.round(px) + 'px Impact,"Arial Black","Helvetica Neue",Arial,sans-serif'; }
+function drawLogo(str, cx, y, size, c1, c2, ext) {
+  ctx.save();
+  ctx.font = logoFont(size);
+  let w = ctx.measureText(str).width;
+  if (w > CW * 0.92) { size *= CW * 0.92 / w; ctx.font = logoFont(size); }
+  ctx.textAlign = 'center'; ctx.lineJoin = 'round'; ctx.miterLimit = 2;
+  const depth = Math.max(2, Math.round(size * 0.055));
+  ctx.strokeStyle = '#0b0a14'; ctx.lineWidth = size * 0.13;
+  ctx.strokeText(str, cx, y + depth);
+  ctx.fillStyle = ext || '#991b1b';
+  for (let i = depth; i > 0; i -= 1) ctx.fillText(str, cx, y + i);
+  ctx.strokeText(str, cx, y);
+  const g = ctx.createLinearGradient(0, y - size * 0.85, 0, y);
+  g.addColorStop(0, c1); g.addColorStop(1, c2);
+  ctx.fillStyle = g; ctx.fillText(str, cx, y);
+  const sh = ctx.createLinearGradient(0, y - size * 0.85, 0, y - size * 0.35);
+  sh.addColorStop(0, 'rgba(255,255,255,0.65)'); sh.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = sh; ctx.fillText(str, cx, y);
+  ctx.restore();
+}
+function drawRays(cx, cy, t, a, b) {
+  const rays = 16;
+  for (let i = 0; i < rays; i++) {
+    const a0 = i / rays * Math.PI * 2 + t * 0.18, a1 = a0 + Math.PI / rays;
+    ctx.fillStyle = i % 2 ? a : b;
+    ctx.beginPath(); ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + Math.cos(a0) * CH, cy + Math.sin(a0) * CH);
+    ctx.lineTo(cx + Math.cos(a1) * CH, cy + Math.sin(a1) * CH);
+    ctx.closePath(); ctx.fill();
+  }
+}
+function drawBoot() {
+  ctx.fillStyle = '#05040c'; ctx.fillRect(0, 0, CW, CH);
+  if (Math.floor(G.t * 2) % 2 === 0) text('TAP TO START', CW / 2, CH * 0.5, CW * 0.075, '#d9f99d');
+  text('SOUND ON', CW / 2, CH * 0.56, CW * 0.035, '#8b87b0');
+}
 function drawTitle() {
-  ctx.fillStyle = '#1b1830'; ctx.fillRect(0, 0, CW, CH);
-  // scrolling wall bg
-  ctx.fillStyle = '#2b2748';
-  for (let i = 0; i < 12; i++) ctx.fillRect(0, Math.round(((i * 90 + G.t * 30) % (CH + 90)) - 90), CW, 3);
-  const n = 1 + (Math.floor(G.t * (2 + G.t * 0.35)) % 6);
-  const hi = Array(n).fill('HI').join(' ');
-  const cols = ['#a3e635', '#facc15', '#22d3ee', '#f472b6'];
-  text(hi, CW / 2, CH * 0.11, CW * 0.095, cols[Math.floor(G.t * 4) % 4]);
-  text(GAME_TITLE, CW / 2, CH * 0.185, CW * 0.078, '#fff');
-  text("HOOK 'EM HORNS!", CW / 2, CH * 0.235, CW * 0.048, '#f97316');
-  const im = IMG.happy, sc = (CH * 0.40) / im.height;
-  ctx.drawImage(im, Math.round(CW / 2 - im.width * sc / 2), Math.round(CH * 0.31 + Math.sin(G.t * 3) * 4), Math.round(im.width * sc), Math.round(im.height * sc));
-  if (Math.floor(G.t * 2) % 2 === 0) text('TAP TO MAKE IT SO', CW / 2, CH * 0.82, CW * 0.052, '#d9f99d');
-  text('TAP A GLOWING HOLD TO REACH', CW / 2, CH * 0.87, CW * 0.034, '#c4b5fd');
-  text('TAP CHALK UP WHEN YOUR GRIP RUNS LOW', CW / 2, CH * 0.905, CW * 0.03, '#c4b5fd');
-  if (!('ontouchstart' in window)) text('KEYS: ARROWS + SPACE, C = CHALK', CW / 2, CH * 0.935, CW * 0.026, '#8b87b0');
-  if (G.best.length) text('BEST ' + G.best[0].n + '  ' + String(G.best[0].s).padStart(6, '0'), CW / 2, CH * 0.955, CW * 0.036, '#fde68a');
+  const t = G.titleT, k = Math.min(1, t / 0.4);
+  ctx.fillStyle = '#0a1233'; ctx.fillRect(0, 0, CW, CH);
+  drawRays(CW / 2, CH * 0.6, G.t, '#142968', '#0e1d52');
+  const gr = ctx.createRadialGradient(CW / 2, CH * 0.62, 0, CW / 2, CH * 0.62, CW * 0.95);
+  gr.addColorStop(0, 'rgba(96,165,250,0.6)'); gr.addColorStop(1, 'rgba(96,165,250,0)');
+  ctx.fillStyle = gr; ctx.fillRect(0, 0, CW, CH);
+  // mat strip + venue
+  ctx.fillStyle = '#1d4ed8'; ctx.fillRect(0, CH * 0.86, CW, CH * 0.14);
+  ctx.fillStyle = '#3b82f6'; ctx.fillRect(0, CH * 0.86, CW, Math.max(3, CW * 0.008));
+  text('HUSTON BOULDERS', CW / 2, CH * 0.925, CW * 0.04, '#bfdbfe', 'center', '#1e3a8a');
+  // Johnny
+  const im = IMG.happy, sc = (CH * 0.36) / im.height, bob = Math.sin(G.t * 3) * 4;
+  ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.beginPath(); ctx.ellipse(CW / 2, CH * 0.43 + im.height * sc - 2, im.width * sc * 0.42, CH * 0.012, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.drawImage(im, Math.round(CW / 2 - im.width * sc / 2), Math.round(CH * 0.43 + bob), Math.round(im.width * sc), Math.round(im.height * sc));
+  // logo: slams in, then idles
+  const slam = 1 + (1 - k) * 1.1, pulse = 1 + Math.sin(G.t * 2.4) * 0.012;
+  ctx.globalAlpha = k;
+  drawLogo('SEND IT', CW / 2, CH * 0.19, CW * 0.17 * slam * pulse, '#fef08a', '#facc15', '#9a3412');
+  drawLogo('JAMES!', CW / 2, CH * 0.31, CW * 0.23 * slam * pulse, '#bef264', '#65a30d', '#14532d');
+  ctx.globalAlpha = 1;
+  if (t > 0.45) {
+    const w = CW * 0.8, x = CW / 2 - w / 2, y = CH * 0.36, h = CW * 0.095;
+    ctx.fillStyle = '#0b0a14'; ctx.fillRect(x - 4, y - 4, w + 8, h + 8);
+    ctx.fillStyle = '#b91c1c'; ctx.fillRect(x, y, w, h);
+    ctx.fillStyle = '#ef4444'; ctx.fillRect(x, y, w, h * 0.35);
+    text('JOHNNY VS. THE WALL', CW / 2, y + h * 0.71, CW * 0.052, '#fff');
+  }
+  if (t < 0.12) { ctx.fillStyle = 'rgba(255,255,255,' + (0.7 * (1 - t / 0.12)) + ')'; ctx.fillRect(0, 0, CW, CH); }
+  if (t > 0.6 && Math.floor(G.t * 2) % 2 === 0) text('TAP TO MAKE IT SO', CW / 2, CH * 0.81, CW * 0.055, '#d9f99d');
+  text('FOLLOW THE LIME HOLDS', CW / 2, CH * 0.845, CW * 0.04, '#fff');
+  if (!('ontouchstart' in window)) text('ARROWS PICK A HOLD  \u2022  SPACE GRABS  \u2022  C = CHALK', CW / 2, CH * 0.973, CW * 0.026, '#93c5fd');
+  if (G.best.length) text('BEST ' + G.best[0].n + '  ' + String(G.best[0].s).padStart(6, '0'), CW / 2, CH * 0.965, CW * 0.034, '#fde68a');
+}
+function drawWallMonster(cx, cy, w, t) {
+  const h = w * 1.15, x = cx - w / 2, y = cy - h / 2, p = Math.max(3, Math.round(w / 22));
+  ctx.fillStyle = '#0b0a14'; ctx.fillRect(x - p, y - p, w + 2 * p, h + 2 * p);
+  ctx.fillStyle = '#4338ca'; ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = '#3730a3'; ctx.fillRect(x, y + h * 0.5, w, p); ctx.fillRect(x + w * 0.5, y, p, h * 0.5);
+  ctx.fillStyle = '#a5b4fc';
+  for (const [bx, by] of [[0.08, 0.06], [0.92, 0.06], [0.08, 0.94], [0.92, 0.94]]) ctx.fillRect(x + w * bx - p, y + h * by - p, p * 2, p * 2);
+  // angry hold-eyes
+  for (const ex of [0.3, 0.7]) {
+    const px = x + w * ex, py = y + h * 0.3, r = w * 0.13;
+    ctx.fillStyle = '#0b0a14'; ctx.beginPath(); ctx.ellipse(px, py, r + p, r * 0.8 + p, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#d9f99d'; ctx.beginPath(); ctx.ellipse(px, py, r, r * 0.8, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#0b0a14'; ctx.fillRect(px - p + Math.sin(t * 3) * p, py - p, p * 2, p * 2.5);
+    ctx.fillStyle = '#0b0a14'; ctx.beginPath(); ctx.moveTo(px - r * 1.3, py - r * (ex < 0.5 ? 1.2 : 0.4)); ctx.lineTo(px + r * 1.3, py - r * (ex < 0.5 ? 0.4 : 1.2)); ctx.lineTo(px + r * 1.3, py - r * (ex < 0.5 ? 0.7 : 1.5)); ctx.lineTo(px - r * 1.3, py - r * (ex < 0.5 ? 1.5 : 0.7)); ctx.closePath(); ctx.fill();
+  }
+  // jagged mouth
+  const my = y + h * 0.68 + Math.abs(Math.sin(t * 4)) * p, mw = w * 0.62, mx = x + (w - mw) / 2, n = 6;
+  ctx.fillStyle = '#0b0a14'; ctx.fillRect(mx - p, my - p, mw + 2 * p, h * 0.2 + 2 * p);
+  ctx.fillStyle = '#7f1d1d'; ctx.fillRect(mx, my, mw, h * 0.2);
+  ctx.fillStyle = '#f8fafc';
+  for (let i = 0; i < n; i++) { const tx = mx + i * mw / n; ctx.beginPath(); ctx.moveTo(tx, my); ctx.lineTo(tx + mw / n, my); ctx.lineTo(tx + mw / n / 2, my + h * 0.08); ctx.closePath(); ctx.fill(); }
+}
+function drawCard() {
+  const R = ROUTES[G.routeIdx], C = CARDS[G.routeIdx] || CARDS[0], t = G.cardT;
+  ctx.fillStyle = '#0c1640'; ctx.fillRect(0, 0, CW, CH);
+  drawRays(CW / 2, CH * 0.38, t, '#1e3a8a', '#12275f');
+  ctx.fillStyle = '#14102a'; ctx.fillRect(0, CH * 0.03, CW, CH * 0.11);
+  ctx.fillStyle = '#facc15'; ctx.fillRect(0, CH * 0.03, CW, 4); ctx.fillRect(0, CH * 0.14 - 4, CW, 4);
+  text('ROUTE ' + (G.routeIdx + 1) + ' OF ' + ROUTES.length, CW / 2, CH * 0.067, CW * 0.04, '#a5f3fc');
+  text(R.name, CW / 2, CH * 0.117, CW * 0.062, '#fff');
+  const slide = Math.pow(1 - Math.min(1, t / 0.5), 2) * CW * 0.7;
+  const im = IMG.happy, sc = (CH * 0.30) / im.height;
+  ctx.drawImage(im, Math.round(CW * 0.26 - im.width * sc / 2 - slide), Math.round(CH * 0.18), Math.round(im.width * sc), Math.round(im.height * sc));
+  drawWallMonster(CW * 0.74 + slide, CH * 0.31, CW * 0.34, G.t);
+  drawLogo('VS', CW / 2, CH * 0.42, CW * 0.14 * (1 + Math.sin(G.t * 5) * 0.03), '#fef08a', '#f59e0b', '#9a3412');
+  const plate = (x, name, line) => {
+    ctx.fillStyle = '#0b0a14'; ctx.fillRect(x - 3, CH * 0.5 - 3, CW * 0.45 + 6, CH * 0.075 + 6);
+    ctx.fillStyle = '#1e293b'; ctx.fillRect(x, CH * 0.5, CW * 0.45, CH * 0.075);
+    text(name, x + CW * 0.225, CH * 0.5 + CH * 0.032, CW * 0.036, '#fff');
+    text(line, x + CW * 0.225, CH * 0.5 + CH * 0.062, CW * 0.03, '#fde68a');
+  };
+  plate(CW * 0.03, 'JAMES', 'FALLS: ' + G.totalFalls);
+  plate(CW * 0.52, C.rival, 'RECORD: ' + C.rec);
+  // rival taunt bubble
+  const bx = CW * 0.05, by = CH * 0.60, bw = CW * 0.9, bh = CH * 0.075;
+  ctx.fillStyle = '#0b0a14'; ctx.fillRect(bx - 3, by - 3, bw + 6, bh + 6);
+  ctx.fillStyle = '#f8fafc'; ctx.fillRect(bx, by, bw, bh);
+  ctx.beginPath(); ctx.moveTo(CW * 0.72, by); ctx.lineTo(CW * 0.78, by - CH * 0.03); ctx.lineTo(CW * 0.84, by); ctx.closePath(); ctx.fill();
+  const tl = wrap('"' + C.taunt + '"', bw - CW * 0.06, CW * 0.04);
+  tl.slice(0, 2).forEach((l, i) => { ctx.font = font(CW * 0.04); ctx.textAlign = 'center'; ctx.fillStyle = '#14102a'; ctx.fillText(l, CW / 2, by + CW * 0.055 + i * CW * 0.05); });
+  // Dave in his corner + narrator / coach box
+  drawDaveAt(Math.round(CW * 0.11), Math.round(CH * 0.93), CH * 0.0046, null);
+  text('DAVE', CW * 0.11, CH * 0.96, CW * 0.034, '#93c5fd');
+  const nx = CW * 0.24, ny = CH * 0.745, nw = CW * 0.72, nh = CH * 0.13;
+  ctx.fillStyle = '#fff'; ctx.fillRect(nx - 4, ny - 4, nw + 8, nh + 8);
+  ctx.fillStyle = '#000'; ctx.fillRect(nx, ny, nw, nh);
+  const showNarr = C.narr && t < 3.6;
+  const label = showNarr ? 'NARRATOR:' : 'DAVE:';
+  const body = showNarr ? C.narr : ('"' + C.coach + '"');
+  const chars = Math.floor(Math.max(0, (showNarr ? t - 0.6 : t - 3.7)) * 28);
+  text(label, nx + CW * 0.02, ny + CW * 0.05, CW * 0.032, '#a3e635', 'left');
+  wrap(body.slice(0, chars), nw - CW * 0.05, CW * 0.04).slice(0, 3).forEach((l, i) => text(l, nx + CW * 0.02, ny + CW * 0.1 + i * CW * 0.052, CW * 0.04, '#fff', 'left'));
+  if (t > 0.6 && Math.floor(G.t * 2) % 2 === 0) text('TAP TO CONTINUE', CW * 0.6, CH * 0.955, CW * 0.032, '#d9f99d');
 }
 
 function drawAd() {
@@ -1001,7 +1263,9 @@ function drawEnd() {
 function render() {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   if (G.state === 'loading') { ctx.fillStyle = '#1b1830'; ctx.fillRect(0, 0, CW, CH); text('LOADING...', CW / 2, CH / 2, CW * 0.06, '#d9f99d'); return; }
+  if (G.state === 'boot') { drawBoot(); return; }
   if (G.state === 'title') { drawTitle(); return; }
+  if (G.state === 'card') { drawCard(); return; }
   if (G.state === 'ad') { drawAd(); return; }
   if (G.state === 'end') { drawEnd(); return; }
   ctx.save();
@@ -1018,9 +1282,9 @@ function render() {
   drawHUD();
   if (G.state === 'intro') {
     const R = ROUTES[G.routeIdx];
-    text(R.name, CW / 2, CH * 0.3, CW * 0.075, '#fff');
-    text(R.sub, CW / 2, CH * 0.3 + CW * 0.07, CW * 0.04, '#c4b5fd');
-    if (G.routeIdx === 0) text('TAP A GLOWING HOLD', CW / 2, CH * 0.45, CW * 0.045, '#d9f99d');
+    text('READY...', CW / 2, CH * 0.3, CW * 0.075, '#fff');
+    if (G.routeIdx === 0) { text('FOLLOW THE LIME HOLDS', CW / 2, CH * 0.44, CW * 0.05, '#d9f99d'); text('GRAY HOLDS ARE FAKES', CW / 2, CH * 0.49, CW * 0.04, '#fca5a5'); }
+    if (G.routeIdx === 2) text('NO GLOW. READ THE WALL.', CW / 2, CH * 0.44, CW * 0.05, '#fde68a');
   }
   drawCaption();
   if (G.state === 'win') drawWin();
@@ -1034,7 +1298,7 @@ function advanceAd() {
   else finishGame();
 }
 function finishGame() {
-  G.state = 'end'; G.endT = 0; musicOn = false;
+  G.state = 'end'; G.endT = 0; setTrack(0);
   let name = 'JAM';
   try { name = (prompt('NEW SCORE ' + G.score + '! ENTER 3 INITIALS', 'JAM') || 'JAM').toUpperCase().slice(0, 3); } catch (e) {}
   G.best.push({ n: name, s: G.score });
@@ -1054,7 +1318,7 @@ function frame(ts) {
 try { G.best = JSON.parse(localStorage.getItem(BEST_KEY) || '[]'); } catch (e) { G.best = []; }
 window.__dbg.startRoute = startRoute; window.__dbg.onTap = onTap; window.__dbg.attempt = attempt; window.__dbg.winRoute = winRoute; window.__dbg.finishGame = finishGame;
 window.__dbg.setState = s => { G.state = s; };
-loadSprites(() => { G.state = 'title'; });
+loadSprites(() => { G.state = 'boot'; });
 requestAnimationFrame(frame);
 })();
 </script>
