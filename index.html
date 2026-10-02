@@ -264,7 +264,7 @@ function drawDave(x, yBase, say) {
   const sx = Math.round(Math.min(x * u, (mb.x - CW * 0.012) - im.width * s * 0.5)), sy = Math.round(wy(yBase));
   const w = Math.round(im.width * s), h = Math.round(im.height * s);
   ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.ellipse(sx, sy, w * 0.45, u * 2, 0, 0, Math.PI * 2); ctx.fill();
-  if (k === 'daveShout') { ctx.save(); ctx.translate(sx, 0); ctx.scale(-1, 1); ctx.drawImage(im, Math.round(-w / 2), sy - h, w, h); ctx.restore(); }
+  if (k === 'daveShout' || k === 'daveSeated') { ctx.save(); ctx.translate(sx, 0); ctx.scale(-1, 1); ctx.drawImage(im, Math.round(-w / 2), sy - h, w, h); ctx.restore(); }
   else ctx.drawImage(im, Math.round(sx - w / 2), sy - h, w, h);
   if (say) {
     ctx.save();
@@ -306,9 +306,18 @@ function buildChain(ac) {
 function audioInit() {
   if (!AC) {
     try { AC = new (window.AudioContext || window.webkitAudioContext)(); const c = buildChain(AC); MASTER = c.master; DUCK = c.duck; SFXBUS = c.sfx; } catch (e) { AC = null; }
+    try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}   // iOS: play even with the ringer switch silenced
   }
-  if (AC && AC.state === 'suspended') AC.resume();
+  if (AC && AC.state !== 'running') {
+    try { const p = AC.resume(); if (p && p.catch) p.catch(() => {}); } catch (e) {}
+    // iOS only treats the context as unlocked once a sound has actually started inside a gesture, so start a silent one
+    try { const sb = AC.createBuffer(1, 1, 22050), ss = AC.createBufferSource(); ss.buffer = sb; ss.connect(AC.destination); ss.start(0); } catch (e) {}
+  }
 }
+// iOS Safari/Chrome unlock audio on touchend/click, not always on pointerdown, and a context can fall back to suspended/interrupted later.
+// So keep trying on EVERY gesture; it is a no-op once the context is running.
+['touchend', 'pointerup', 'mouseup', 'click', 'keydown'].forEach(ev => window.addEventListener(ev, audioInit, { capture: true, passive: true }));
+document.addEventListener('visibilitychange', () => { if (!document.hidden) musicRestart(); });
 function tone(f, d, type, v, f2, delay) {
   if (!AC || muted) return;
   const t = AC.currentTime + (delay || 0);
@@ -681,8 +690,9 @@ function playStep(ac, d, T, g, t) {
 }
 let mStep = 0, mNext = 0, mTrack = 0;
 function setTrack(i) { mTrack = i; mStep = 0; mNext = 0; musicOn = true; }
+function musicRestart() { mNext = 0; }
 function musicTick() {
-  if (!AC || muted || !musicOn) { mNext = 0; return; }
+  if (!AC || muted || !musicOn || AC.state !== 'running') { mNext = 0; return; }   // never schedule into a frozen clock: start cleanly the moment audio unlocks
   const T = TRACKS[mTrack], sd = 60 / T.bpm / 4;
   if (!mNext || mNext < AC.currentTime) mNext = AC.currentTime + 0.06;
   while (mNext < AC.currentTime + 0.3) { playStep(AC, { master: MASTER, duck: DUCK }, T, mStep, mNext); mStep++; mNext += sd; }
@@ -714,14 +724,14 @@ const G = {
   state: 'loading', t: 0, cardT: 0, cardTT: 0, cardStage: 0, capQ: [], titleT: 0, routeIdx: 0, score: 0, totalFalls: 0, routeFalls: 0, time: 0,
   holds: [], decoys: [], haz: [], parts: [], cap: null, daveSay: null, daveT: 0,
   camY: 0, shake: 0, flash: 0, retry: false, introT: 0, adIdx: 0, adT: 0, winT: 0,
-  hazT: 4, maxId: 0, topY: 0, best: [], endT: 0, sel: null, tear: 0
+  hazT: 4, maxId: 0, topY: 0, best: [], endT: 0, sel: null, tear: 0, winFree: null
 };
 const P = {
   mode: 'hang', hold: null, x: 0, y: 0, from: null, to: null, t: 0, dur: 0, dyno: false, doomed: false,
   grip: 100, chalk: 3, hot: 0, streak: 0, lastGrab: -9, warned: false, inv: 0, chalkT: 0,
   hangT: 0, topT: 0, fx: 0, fy: 0, vy: 0, bounced: 0, lieT: 0, flip: false, topWait: 0
 };
-window.__dbg = { G, P, ROUTES };
+window.__dbg = { G, P, ROUTES, audio: () => (AC ? AC.state : 'none'), getAC: () => AC };
 
 function mulberry(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 function pickWeighted(rng, w) { let r = rng(), acc = 0, last = null; for (const k in w) { acc += w[k]; last = k; if (r <= acc) return k; } return last; }
@@ -948,7 +958,7 @@ function winRoute() {
   const R = ROUTES[G.routeIdx];
   const bonus = 1000 + Math.round(P.grip) * 5 + Math.max(0, 70 - Math.floor(G.time)) * 20 + (G.routeFalls === 0 ? 1500 : 0);
   G.score += bonus; G.lastBonus = bonus;
-  G.state = 'win'; G.winT = 0; P.mode = 'win';
+  G.state = 'win'; G.winT = 0; G.winFree = null; P.mode = 'win';
   const WINS = [['W', 2.4], ['NO CAP, THAT WAS BUSINESS CLASS!', 0.9], ["ISN'T THAT POWERFUL?", 1]];
   if (G.routeIdx === ROUTES.length - 1) say('YOUR CUISINE REIGNS SUPREME!', '#fde68a', 2.4, 0.9, 'reigns');
   else { const w = WINS[G.routeIdx % WINS.length]; say(w[0], '#fde68a', 2.2, w[1], 'win'); }
@@ -1014,7 +1024,7 @@ function onTap(px, py) {
     case 'card': if (G.cardT > 0.5) cardAdvance(); break;
     case 'ad': advanceAd(); break;
     case 'end': if (G.endT > 1.2) { G.state = 'title'; G.titleT = 0; setTrack(0); } break;
-    case 'win': if (G.winT > 2.2) { if (G.routeIdx === ROUTES.length - 1) finishGame(); else { G.state = 'ad'; G.adIdx = G.routeIdx; G.adT = 0; } } break;
+    case 'win': if (winReady()) { if (G.routeIdx === ROUTES.length - 1) finishGame(); else { G.state = 'ad'; G.adIdx = G.routeIdx; G.adT = 0; } } break;
     case 'climb':
       if (P.mode === 'lie') { if (G.retry) startRoute(G.routeIdx, true); return; }
       if (P.mode !== 'hang') return;
@@ -1217,7 +1227,10 @@ function update(dt) {
       if (G.introT > 1.6 && G.state === 'intro') { G.state = 'climb'; }
       break;
     case 'climb': updateClimb(dt); break;
-    case 'win': G.winT += dt; break;
+    case 'win':
+      G.winT += dt;
+      if (G.winFree === null && ((!G.cap && !G.capQ.length) || G.winT > 4.5)) G.winFree = G.winT;   // the win caption has finished: Dave may slide in
+      break;
     case 'ad': G.adT += dt; break;
     case 'end': G.endT += dt; break;
   }
@@ -1384,7 +1397,7 @@ function playerSprite() {
 function drawPlayer() {
   if (P.mode === 'fall') { drawBase('fall', P.fx, P.fy, false); return; }
   if (P.mode === 'lie') { drawBase('lying', P.fx, MAT_TOP - 4, false); return; }
-  if (P.mode === 'win') { drawBase('victory', W0 / 2, G.camY + VH * 0.42 + Math.abs(Math.sin(G.winT * 6)) * 4, false); return; }
+  if (P.mode === 'win') { drawBase('victory', W0 / 2, G.camY + VH * 0.53 + Math.abs(Math.sin(G.winT * 6)) * 4, false); return; }
   if (P.inv > 0 && Math.floor(P.inv * 20) % 2 === 0) return;
   const [k, flip] = playerSprite();
   let x = P.x, y = P.y;
@@ -1614,7 +1627,8 @@ function drawTitle() {
   // mat strip + venue
   ctx.fillStyle = '#1d4ed8'; ctx.fillRect(0, CH * 0.86, CW, CH * 0.14);
   ctx.fillStyle = '#3b82f6'; ctx.fillRect(0, CH * 0.86, CW, Math.max(3, CW * 0.008));
-  text('HUSTON BOULDERS', CW / 2, CH * 0.972, CW * 0.032, '#bfdbfe', 'center', '#1e3a8a');
+  const hasKeys = !('ontouchstart' in window);
+  text('HUSTON BOULDERS', CW / 2, hasKeys ? CH * 0.987 : CH * 0.972, CW * 0.032, '#bfdbfe', 'center', '#1e3a8a');
   { const b = BTN.howto(); ctx.fillStyle = '#0b0a14'; ctx.fillRect(b.x - 4, b.y - 4, b.w + 8, b.h + 8); ctx.fillStyle = '#facc15'; ctx.fillRect(b.x, b.y, b.w, b.h); ctx.fillStyle = '#fde68a'; ctx.fillRect(b.x, b.y, b.w, b.h * 0.4); text('HOW TO PLAY', b.x + b.w / 2, b.y + b.h * 0.7, CW * 0.044, '#1c1917', 'center', '#fde68a'); }
   { const m = BTN.music(); ctx.fillStyle = '#0b0a14'; ctx.fillRect(m.x - 3, m.y - 3, m.w + 6, m.h + 6); ctx.fillStyle = '#1e3a8a'; ctx.fillRect(m.x, m.y, m.w, m.h); ctx.fillStyle = '#3b82f6'; ctx.fillRect(m.x, m.y, m.w, m.h * 0.38); text('MUSIC: ' + (MUSIC_SET === 'classic' ? 'CLASSIC' : 'NEW'), m.x + m.w / 2, m.y + m.h * 0.72, CW * 0.032, '#fff'); }
   // Johnny
@@ -1639,7 +1653,7 @@ function drawTitle() {
   if (t < 0.12) { ctx.fillStyle = 'rgba(255,255,255,' + (0.7 * (1 - t / 0.12)) + ')'; ctx.fillRect(0, 0, CW, CH); }
   if (t > 0.6 && Math.floor(G.t * 2) % 2 === 0) text('TAP TO MAKE IT SO', CW / 2, CH * 0.81, CW * 0.055, '#d9f99d');
   text('FOLLOW THE LIME HOLDS', CW / 2, CH * 0.845, CW * 0.04, '#fff');
-  if (!('ontouchstart' in window)) text('ARROWS PICK A HOLD  \u2022  SPACE GRABS  \u2022  C = CHALK', CW / 2, CH * 0.973, CW * 0.026, '#93c5fd');
+  if (hasKeys) text('ARROWS PICK A HOLD  \u2022  SPACE GRABS  \u2022  C = CHALK', CW / 2, CH * 0.957, CW * 0.026, '#93c5fd');
 }
 // ENEMY: painted hold monsters (ChatGPT art, face integrated into the hold). Four sprites: enSloper, enJug, enCrumbler, enGreasy.
 function enemyCanvas(key) { return IMG[key]; }
@@ -1852,8 +1866,10 @@ function drawAd() {
   }
 }
 
+function winReady() { return G.winT > 2.2 && G.winFree !== null && G.winT - G.winFree > 1.0; }   // Dave has had a second on screen
 function drawCutin() {
-  const t = G.winT - 0.45;
+  if (G.winFree === null) return;
+  const t = G.winT - G.winFree;
   if (t <= 0) return;
   const k = Math.min(1, t / 0.45), e = 1 - Math.pow(1 - k, 3);
   const bw = CW * 0.27, bh = bw * 1.42, y = CH * 0.145, gap = CW * 0.025;
@@ -1879,7 +1895,7 @@ function drawWin() {
   text('+' + G.lastBonus + ' BONUS', CW / 2, CH * 0.69, CW * 0.05, '#fde68a');
   if (G.routeFalls === 0) text('FLASH! NO FALLS!', CW / 2, CH * 0.74, CW * 0.05, '#a5f3fc');
   text('SCORE ' + String(G.score).padStart(6, '0'), CW / 2, CH * 0.82, CW * 0.05, '#fff');
-  if (G.winT > 2.2 && Math.floor(G.t * 2) % 2 === 0) text('TAP TO CONTINUE', CW / 2, CH * 0.92, CW * 0.044, '#d9f99d');
+  if (winReady() && Math.floor(G.t * 2) % 2 === 0) text('TAP TO CONTINUE', CW / 2, CH * 0.92, CW * 0.044, '#d9f99d');
 }
 
 // ---------- VICTORY: pixel-art sunset over a skyline. Johnny seen from behind, both arms up, head inside the sun ----------
