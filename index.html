@@ -383,15 +383,35 @@ const PENT = [0, 3, 5, 7, 10, 12, 15, 17, 19];
 const C_I = [0, 3, 7], C_VI = [-4, 0, 3], C_III = [3, 7, 10], C_VII = [-2, 2, 5], C_IV = [-7, -4, 0];
 const PENTM = [0, 2, 4, 7, 9, 12, 14, 16, 19];                       // major pentatonic (semitones from the tonic)
 const M_I = [0, 4, 7], M_II = [2, 5, 9], M_IV = [5, 9, 12], M_V = [7, 11, 14], M_VI = [9, 12, 16];
-const TRACKS = [
+const TRACKS_NEW = [
   // style decides the whole rhythm section. 'house' (default) is the original four-on-the-floor Deep Mix.
   { name: 'TITLE', style: 'adventure', bpm: 112, root: 55, gain: 3.1, prog: [M_I, M_V, M_VI, M_IV] },
   { name: 'V0 WARM-UP', style: 'funk', bpm: 100, root: 48, gain: 2.3, prog: [M_I, M_VI, M_IV, M_V] },
   { name: 'V1 COMP NIGHT', style: 'breaks', bpm: 132, root: 45, gain: 1.7, prog: [C_I, C_VI, C_IV, C_VII], motif: [5, -1, 4, 3, -1, 2, -1, 3, 4, -1, 5, -1, 6, -1, 5, 4] },
   { name: 'V2 ONION PATCH', style: 'wonk', bpm: 96, root: 41, gain: 1.8, prog: [C_I, C_I, C_VI, C_VII] },
   { name: 'DEEP MIX', bpm: 140, root: 42, prog: [C_I, C_I, C_VII, C_VI], bass: 'roll', dark: true, motif: [0, -1, -1, 0, -1, 2, -1, -1, 3, -1, -1, 2, -1, 0, -1, -1] },
-  { name: 'VICTORY', style: 'chimes', bpm: 78, root: 60, gain: 2.2, prog: [M_I, M_VI, M_IV, M_V] }
+  { name: 'VICTORY', style: 'chimes', bpm: 78, root: 60, gain: 1.55, prog: [M_I, M_VI, M_IV, M_V] }
 ];
+// CLASSIC: the original all-house set (same four-on-the-floor kick on every stage). The Deep Mix and the victory chimes are shared.
+const TRACKS_CLASSIC = [
+  { name: 'TITLE', bpm: 118, root: 57, prog: [C_I, C_VI, C_III, C_VII], bass: 'off', motif: [4, -1, -1, 3, -1, 2, -1, -1, 4, -1, 5, -1, 4, -1, 3, -1] },
+  { name: 'V0 WARM-UP', bpm: 124, root: 50, prog: [C_I, C_VII, C_VI, C_VII], bass: 'off', motif: [0, -1, 2, -1, 3, -1, 2, -1, 0, -1, 2, -1, 4, -1, 3, -1] },
+  { name: 'V1 COMP NIGHT', bpm: 130, root: 52, prog: [C_I, C_VI, C_IV, C_VII], bass: 'off', motif: [5, -1, 4, 3, -1, 2, -1, 3, 4, -1, 5, -1, 6, -1, 5, 4] },
+  { name: 'V2 ONION PATCH', bpm: 136, root: 48, prog: [C_I, C_I, C_VI, C_VII], bass: 'roll', motif: [3, -1, 3, 5, -1, 3, 2, -1, 3, -1, 5, 6, -1, 5, 3, -1] },
+  TRACKS_NEW[4],
+  TRACKS_NEW[5]
+];
+const MUSIC_KEY = 'sendItJames.music.v1';
+let MUSIC_SET = 'new';
+try { if (localStorage.getItem(MUSIC_KEY) === 'classic') MUSIC_SET = 'classic'; } catch (e) {}
+let TRACKS = MUSIC_SET === 'classic' ? TRACKS_CLASSIC : TRACKS_NEW;
+function toggleMusicSet() {
+  MUSIC_SET = MUSIC_SET === 'classic' ? 'new' : 'classic';
+  TRACKS = MUSIC_SET === 'classic' ? TRACKS_CLASSIC : TRACKS_NEW;
+  try { localStorage.setItem(MUSIC_KEY, MUSIC_SET); } catch (e) {}
+  mStep = 0; mNext = 0;
+  if (G.state === 'title') setTrack(0);
+}
 const ARPSEQ = [0, 1, 2, 3, 2, 1, 2, 3, 0, 1, 2, 3, 2, 1, 2, 3];
 function playHouse(ac, d, T, g, t) {
   const sd = 60 / T.bpm / 4, st = g % 16, bar = Math.floor(g / 16) % 32;
@@ -669,7 +689,7 @@ function musicTick() {
 setInterval(musicTick, 90);
 // offline render for previews / analysis (returns base64 of 16-bit mono PCM)
 window.__music = {
-  TRACKS,
+  get TRACKS() { return TRACKS; }, get TRACKS_NEW() { return TRACKS_NEW; }, get TRACKS_CLASSIC() { return TRACKS_CLASSIC; }, get set() { return MUSIC_SET; }, toggle: () => toggleMusicSet(),
   render(i, bars, sr) {
     const T = TRACKS[i], sd = 60 / T.bpm / 4, total = bars * 16;
     const OC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
@@ -908,7 +928,7 @@ function winRoute() {
   G.score += bonus; G.lastBonus = bonus;
   G.state = 'win'; G.winT = 0; P.mode = 'win';
   const WINS = [['W', 2.4], ['NO CAP, THAT WAS BUSINESS CLASS!', 0.9], ["ISN'T THAT POWERFUL?", 1]];
-  if (G.routeIdx === ROUTES.length - 1) say('THIS CUISINE REIGNS SUPREME!', '#fde68a', 2.4, 0.9, 'reigns');
+  if (G.routeIdx === ROUTES.length - 1) say('YOUR CUISINE REIGNS SUPREME!', '#fde68a', 2.4, 0.9, 'reigns');
   else { const w = WINS[G.routeIdx % WINS.length]; say(w[0], '#fde68a', 2.2, w[1], 'win'); }
   SFX.win();
   burst(W0 / 2, G.camY + VH * 0.6, 60, ['#d9f99d', '#facc15', '#f472b6', '#67e8f9', '#fff'], 120, 1.6, -90);
@@ -949,6 +969,7 @@ const BTN = {
   chalk: () => ({ x: CW * 0.035, y: CH - CW * 0.2, w: CW * 0.34, h: CW * 0.15 }),
   mute: () => ({ x: CW - CW * 0.14, y: CH - CW * 0.17, w: CW * 0.11, h: CW * 0.11 }),
   howto: () => ({ x: CW * 0.2, y: CH * 0.876, w: CW * 0.6, h: CH * 0.052 }),
+  music: () => ({ x: CW * 0.55, y: CH * 0.016, w: CW * 0.42, h: CH * 0.036 }),
   close: () => ({ x: CW - CW * 0.17, y: CH * 0.012, w: CW * 0.15, h: CW * 0.11 })
 };
 const inRect = (r, x, y) => x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
@@ -962,6 +983,7 @@ function onTap(px, py) {
     case 'boot': setTrack(0); G.state = 'title'; G.titleT = 0; break;
     case 'title':
       if (inRect(BTN.howto(), px, py)) { G.state = 'howto'; G.howPage = 0; SFX.blip(); break; }
+      if (inRect(BTN.music(), px, py)) { toggleMusicSet(); SFX.blip(); break; }
       G.score = 0; G.totalFalls = 0; startRoute(0); SFX.pick(); break;
     case 'howto':
       if (inRect(BTN.close(), px, py)) { G.state = 'title'; SFX.blip(); break; }
@@ -1506,7 +1528,7 @@ function drawBoot() {
 }
 const HOWTO = [
   { title: 'HOW TO CLIMB', rows: [
-    { icon: 'hJug', name: 'LIME HOLDS', text: 'FOLLOW THESE. TAP ONE TO REACH IT. ON A KEYBOARD, USE THE ARROWS, THEN SPACE.' },
+    { icon: 'hJug', name: 'LIME HOLDS', text: 'FOLLOW THESE. TAP OR CLICK ONE TO REACH IT. KEYBOARD: ARROWS TO AIM, SPACE TO GRAB.' },
     { icon: 'hGold', name: 'GOLD HOLD', text: 'IT SITS AT THE TOP. GRAB IT AND HANG ON FOR A SECOND TO SEND THE ROUTE.' },
     { icon: 'gSlop', name: 'GRAY HOLDS', text: 'THESE ARE OFF-ROUTE. YOU CAN GRAB THEM, BUT THEY BURN YOUR GRIP FAST.' },
     { icon: 'pkChalk', name: 'GRIP AND CHALK', text: 'GRIP DRAINS AS YOU HANG. AT ZERO YOU FALL. CHALK UP (C) REFILLS IT.' },
@@ -1529,7 +1551,7 @@ const HOWTO = [
   { title: 'GOOD TO KNOW', rows: [
     { icon: 'lying', name: 'FALLING IS FINE', text: 'THE MAT IS SOFT. TAP TO TRY THE ROUTE AGAIN.' },
     { icon: 'victory', name: 'CLEAN CLIMBS', text: 'FEWER FALLS AND A FASTER TIME EARN BIG BONUS POINTS.' },
-    { icon: 'daveStand', name: 'DAVE', text: 'HE IS WATCHING FROM THE MAT. HE HAS OPINIONS.' }
+    { icon: 'daveStand', name: 'DAVE', text: "DAVE IS WATCHING FROM THE MAT. HE'S YOUR BIGGEST FAN." }
   ] }
 ];
 function drawHowTo() {
@@ -1570,6 +1592,7 @@ function drawTitle() {
   ctx.fillStyle = '#3b82f6'; ctx.fillRect(0, CH * 0.86, CW, Math.max(3, CW * 0.008));
   text('HUSTON BOULDERS', CW / 2, CH * 0.972, CW * 0.032, '#bfdbfe', 'center', '#1e3a8a');
   { const b = BTN.howto(); ctx.fillStyle = '#0b0a14'; ctx.fillRect(b.x - 4, b.y - 4, b.w + 8, b.h + 8); ctx.fillStyle = '#facc15'; ctx.fillRect(b.x, b.y, b.w, b.h); ctx.fillStyle = '#fde68a'; ctx.fillRect(b.x, b.y, b.w, b.h * 0.4); text('HOW TO PLAY', b.x + b.w / 2, b.y + b.h * 0.7, CW * 0.044, '#1c1917', 'center', '#fde68a'); }
+  { const m = BTN.music(); ctx.fillStyle = '#0b0a14'; ctx.fillRect(m.x - 3, m.y - 3, m.w + 6, m.h + 6); ctx.fillStyle = '#1e3a8a'; ctx.fillRect(m.x, m.y, m.w, m.h); ctx.fillStyle = '#3b82f6'; ctx.fillRect(m.x, m.y, m.w, m.h * 0.38); text('MUSIC: ' + (MUSIC_SET === 'classic' ? 'CLASSIC' : 'NEW'), m.x + m.w / 2, m.y + m.h * 0.72, CW * 0.032, '#fff'); }
   // Johnny
   const im = IMG.titleJ, sc = (CH * 0.36) / im.height, bob = Math.sin(G.t * 3) * 4;
   ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.beginPath(); ctx.ellipse(CW / 2, CH * 0.43 + im.height * sc - 2, im.width * sc * 0.42, CH * 0.012, 0, 0, Math.PI * 2); ctx.fill();
@@ -1838,7 +1861,7 @@ function drawAd() {
   if (chars >= A.text.length) {
     ctx.fillStyle = 'rgba(8,6,22,0.8)'; ctx.fillRect(0, CH * 0.925, CW, CH * 0.075);
     if (Math.floor(G.t * 2) % 2 === 0) text('TAP TO CONTINUE', CW / 2, CH * 0.955, CW * 0.044, '#d9f99d');
-    text('NOT AVAILABLE IN SACKTOWN.', CW / 2, CH * 0.985, CW * 0.03, '#a8a3cc');
+    text('NOT AVAILABLE IN SACTOWN OR THE SHUG.', CW / 2, CH * 0.985, CW * 0.03, '#a8a3cc');
   }
 }
 
@@ -1852,16 +1875,109 @@ function drawWin() {
   if (G.winT > 2.2 && Math.floor(G.t * 2) % 2 === 0) text('TAP TO CONTINUE', CW / 2, CH * 0.92, CW * 0.044, '#d9f99d');
 }
 
+// ---------- VICTORY: pixel-art sunset over a skyline. Johnny seen from behind, both arms up, head inside the sun ----------
+const VS = { gw: 170, gh: 0, bg: null, fg: null, cv: null, cx: null, sil: null, stars: [], clouds: [] };
+function vsBuild(gw, gh) {
+  const mk = () => { const c = document.createElement('canvas'); c.width = gw; c.height = gh; const x = c.getContext('2d'); x.imageSmoothingEnabled = false; return [c, x]; };
+  const [bg, b] = mk(), [fg, f] = mk(), [cv, cx2] = mk();
+  const rng = mulberry(4242);
+  const cx = Math.round(gw / 2), cy = Math.round(gh * 0.30), R = 46, crestC = cy + 34, hy = crestC + 6;
+  Object.assign(VS, { gh, bg, fg, cv, cx: cx2, sx: cx, sy: cy, hy, crestC, R });
+  // sky bands with a 3-row dither between them
+  const SKY = ['#1b1646', '#2e2a7a', '#5b21b6', '#9d1f8f', '#d61f69', '#ef5b2a', '#fb923c', '#fcc04a'], bh = hy / SKY.length;
+  for (let y = 0; y < hy; y++) {
+    const bi = Math.min(SKY.length - 1, Math.floor(y / bh)), r = (bi + 1) * bh - y;
+    for (let x = 0; x < gw; x++) {
+      let ci = bi;
+      if (bi < SKY.length - 1) {
+        if (r <= 1) { if (!((x & 1) && (y & 1))) ci = bi + 1; }
+        else if (r <= 2) { if (((x + y) & 1) === 0) ci = bi + 1; }
+        else if (r <= 3) { if (!(x & 1) && !(y & 1)) ci = bi + 1; }
+      }
+      b.fillStyle = SKY[ci]; b.fillRect(x, y, 1, 1);
+    }
+  }
+  // sun: solid disc, then two dithered glow rings
+  for (let y = 0; y < hy; y++) for (let x = 0; x < gw; x++) {
+    const d = Math.hypot(x - cx + 0.5, y - cy + 0.5);
+    let c = null;
+    if (d <= R) c = d < 20 ? '#fffbe0' : d < 33 ? '#fef08a' : '#fde047';
+    else if (d <= R + 5) { if ((x + y) & 1) c = '#fcd34d'; }
+    else if (d <= R + 12) { if (!(x & 1) && !(y & 1)) c = '#fdba74'; }
+    if (c) { b.fillStyle = c; b.fillRect(x, y, 1, 1); }
+  }
+  // skyline: a far layer and a nearer, lower layer, with a few Houston-ish towers
+  const tower = (x0, w, h, col, crown, wcol, lit) => {
+    b.fillStyle = col; b.fillRect(x0, hy - h, w, h + 2);
+    const top = hy - h;
+    if (crown === 'step') { b.fillRect(x0 + 2, top - 3, w - 4, 3); b.fillRect(x0 + 4, top - 6, w - 8, 3); b.fillRect(x0 + (w >> 1), top - 11, 1, 5); }
+    else if (crown === 'ant') { b.fillRect(x0 + (w >> 1), top - 7, 1, 7); }
+    else if (crown === 'slant') { for (let i = 0; i < 4; i++) b.fillRect(x0 + i, top - 1 - i, w - i, 1); }
+    b.fillStyle = wcol;
+    let col2 = 0;
+    for (let wx = x0 + 2; wx < x0 + w - 1; wx += 3, col2++) for (let wy = top + 3; wy < hy - 1; wy += 4) if (lit((col2 * 7 + ((wy - top) >> 2) * 3 + x0) % 11)) b.fillRect(wx, wy, 1, 2);
+  };
+  const FAR = '#4a2275', NEAR = '#2b1352';
+  const litFar = n => n < 2, litNear = n => n < 4;
+  const farH = [22, 30, 26, 38, 24, 34, 28, 44, 26, 32, 22, 40, 30, 26, 36, 24];
+  let fx = -3, fi = 0;
+  while (fx < gw) { const w = 9 + (fi % 3) * 2, h = farH[fi % farH.length]; tower(fx, w, h, FAR, fi % 5 === 3 ? 'ant' : (fi % 7 === 2 ? 'slant' : null), '#d97706', litFar); fx += w + 1; fi++; }
+  tower(12, 14, 56, FAR, 'step', '#d97706', litFar); tower(142, 14, 50, FAR, 'step', '#d97706', litFar);
+  const nearH = [10, 16, 12, 20, 9, 14, 18, 11, 15, 12];
+  let nx = -4, ni = 0;
+  while (nx < gw) { const w = 10 + (ni % 4) * 2, h = nearH[ni % nearH.length]; tower(nx, w, h, NEAR, null, '#fbbf24', litNear); nx += w + 1; ni++; }
+  // foreground hill (a summit to stand on): dark, with a warm rim and little grass tufts. Hides his legs.
+  const crest = x => Math.round(crestC + 0.0035 * Math.pow(x - cx, 2) + Math.sin(x * 0.35) * 1.2 + Math.sin(x * 0.9) * 0.6);
+  for (let x = 0; x < gw; x++) {
+    const c0 = crest(x);
+    f.fillStyle = '#160d33'; f.fillRect(x, c0, 1, gh - c0);
+    f.fillStyle = Math.abs(x - cx) < 40 ? '#7c2d12' : '#3b1773'; f.fillRect(x, c0, 1, 1);
+    f.fillStyle = '#241150'; f.fillRect(x, c0 + 1, 1, 2);
+    f.fillStyle = '#10092a'; if (gh - c0 > 12) f.fillRect(x, c0 + 12, 1, gh - c0 - 12);
+    f.fillStyle = '#0b0720'; f.fillRect(x, Math.round(gh * 0.72), 1, gh);
+    if (rng() < 0.2) { f.fillStyle = '#160d33'; f.fillRect(x, c0 - 1 - Math.floor(rng() * 2), 1, 2); }
+    if (rng() < 0.05) { f.fillStyle = '#2d1b5e'; f.fillRect(x, c0 + 4 + Math.floor(rng() * 8), 1, 1); }
+  }
+  // stars (dark top of the sky only) and clouds (dark streaks lit along the top edge)
+  VS.stars = [];
+  for (let i = 0; i < 34; i++) { const x = Math.floor(rng() * gw), y = Math.floor(rng() * hy * 0.42); if (Math.hypot(x - cx, y - cy) > R + 34) VS.stars.push({ x, y, ph: rng() * 6.28 }); }
+  VS.clouds = [];
+  for (let i = 0; i < 3; i++) {
+    const w = 40 + Math.floor(rng() * 14), px = [];
+    for (let k = 0; k < 5; k++) { const mid = 1 - Math.abs(k - 2) / 2.6, ccx = 7 + k * (w - 14) / 4 + (rng() - 0.5) * 2, rx = 6 + rng() * 3 + mid * 3, ry = 3 + mid * 4 + rng() * 1.4; for (let yy = -9; yy <= 9; yy++) for (let xx = 0; xx < w; xx++) if (Math.pow((xx - ccx) / rx, 2) + Math.pow(yy / ry, 2) <= 1) px.push([xx, yy + 9]); }
+    const set = new Set(px.map(q => q[0] + ',' + q[1]));
+    VS.clouds.push({ x0: rng() * gw, y: Math.floor(hy * (0.30 + i * 0.16)), w, px, set, sp: 0.9 + rng() * 1.1 });
+  }
+  // dark silhouette of the back-view sprite, used as a 1px outline so Johnny pops against the bright sun
+  const im = IMG.hangBack, sc = document.createElement('canvas'); sc.width = im.width; sc.height = im.height;
+  const sx = sc.getContext('2d'); sx.drawImage(im, 0, 0); sx.globalCompositeOperation = 'source-in'; sx.fillStyle = '#2a0f1e'; sx.fillRect(0, 0, sc.width, sc.height);
+  VS.sil = sc;
+}
 function drawEnd() {
-  ctx.fillStyle = '#1b1830'; ctx.fillRect(0, 0, CW, CH);
-  const im = IMG.victory, sc = (CH * 0.34) / im.height;
-  ctx.drawImage(im, Math.round(CW / 2 - im.width * sc / 2), Math.round(CH * 0.1 + Math.abs(Math.sin(G.t * 5)) * -6), Math.round(im.width * sc), Math.round(im.height * sc));
-  text('YOU SENT IT!', CW / 2, CH * 0.5, CW * 0.085, '#d9f99d');
-  let y = CH * 0.57;
+  const gw = VS.gw, gh = Math.round(gw * CH / CW);
+  if (!VS.bg || VS.gh !== gh) vsBuild(gw, gh);
+  const x = VS.cx, t = G.t;
+  x.drawImage(VS.bg, 0, 0);
+  for (const st of VS.stars) { x.fillStyle = 'rgba(255,255,255,' + (0.25 + 0.75 * Math.max(0, Math.sin(t * 1.7 + st.ph))).toFixed(2) + ')'; x.fillRect(st.x, st.y, 1, 1); }
+  for (const c of VS.clouds) {
+    const span = gw + c.w * 2, cx0 = Math.round(((c.x0 + t * c.sp) % span) - c.w);
+    for (const [qx, qy] of c.px) {
+      x.fillStyle = !c.set.has(qx + ',' + (qy - 1)) ? '#f472b6' : (!c.set.has(qx + ',' + (qy + 1)) ? '#4c1d6e' : '#6b2d86');
+      x.fillRect(cx0 + qx, c.y + qy, 1, 1);
+    }
+  }
+  // Johnny, back to the camera, arms up; his head (about 32px down the sprite) sits in the middle of the sun
+  const im = IMG.hangBack, jx = VS.sx - (im.width >> 1), jy = VS.sy - 32 + (Math.sin(t * 2.1) > 0.7 ? -1 : 0);
+  for (const [ox, oy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) x.drawImage(VS.sil, jx + ox, jy + oy);
+  x.drawImage(im, jx, jy);
+  x.drawImage(VS.fg, 0, 0);
+  ctx.save(); ctx.imageSmoothingEnabled = false; ctx.drawImage(VS.cv, 0, 0, CW, CH); ctx.restore();
+  text('YOU SENT IT!', CW / 2, CH * 0.585, CW * 0.085, '#d9f99d');
+  let y = CH * 0.65;
   ENDING_MESSAGE.forEach(l => { wrap(l, CW * 0.88, CW * 0.044).forEach(ln => { text(ln, CW / 2, y, CW * 0.044, '#fff'); y += CW * 0.06; }); y += CW * 0.02; });
-  text('FINAL SCORE ' + String(G.score).padStart(6, '0'), CW / 2, CH * 0.9, CW * 0.05, '#fde68a');
-  text('FALLS: ' + G.totalFalls, CW / 2, CH * 0.94, CW * 0.035, '#a5f3fc');
-  if (G.endT > 1.2 && Math.floor(G.t * 2) % 2 === 0) text('TAP FOR TITLE', CW / 2, CH * 0.98, CW * 0.032, '#d9f99d');
+  text('FINAL SCORE ' + String(G.score).padStart(6, '0'), CW / 2, CH * 0.835, CW * 0.05, '#fde68a');
+  text('FALLS: ' + G.totalFalls, CW / 2, CH * 0.88, CW * 0.035, '#a5f3fc');
+  if (G.endT > 1.2 && Math.floor(G.t * 2) % 2 === 0) text('TAP FOR TITLE', CW / 2, CH * 0.955, CW * 0.032, '#d9f99d');
 }
 
 function render() {
@@ -1890,7 +2006,7 @@ function render() {
     const R = ROUTES[G.routeIdx];
     text('READY...', CW / 2, CH * 0.3, CW * 0.075, '#fff');
     if (G.routeIdx === 0) { text('FOLLOW THE LIME HOLDS', CW / 2, CH * 0.44, CW * 0.05, '#d9f99d'); text('GRAY HOLDS ARE OFF-ROUTE', CW / 2, CH * 0.49, CW * 0.04, '#fca5a5'); }
-    if (G.routeIdx === 2) text('NO GLOW. READ THE WALL.', CW / 2, CH * 0.44, CW * 0.05, '#fde68a');
+    if (G.routeIdx === 2) { text('NO HINTS THIS TIME.', CW / 2, CH * 0.44, CW * 0.05, '#fde68a'); text("THE HOLDS WON'T GLOW.", CW / 2, CH * 0.49, CW * 0.04, '#a5f3fc'); }
     if (G.routeIdx === 3) { text('GRIP DRAINS FASTER.', CW / 2, CH * 0.44, CW * 0.05, '#fde68a'); text('WATCH FOR BATS.', CW / 2, CH * 0.49, CW * 0.045, '#c4b5fd'); }
   }
   drawCaption();
