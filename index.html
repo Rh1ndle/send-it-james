@@ -53,8 +53,8 @@ const MAT_TOP = 30;
 const BEST_KEY = 'sendItJames.best.v1';
 
 const CARDS = [
-  { rival: 'THE FAKE SLOPER', face: 'gSlop', rec: '99-0', taunt: 'GO AHEAD. GRAB ME.', coach: 'GO GET IT, JAMES!', narr: 'ROCKS ABOUND ON THIS LUSH VOLCANIC ISLE.' },
-  { rival: 'THE FAKE JUG', face: 'gJug', rec: '142-0', taunt: "I LOOK GRABBABLE, DON'T I?", coach: "DON'T LOOK DOWN, JOHNNY!" },
+  { rival: 'THE GRAY SLOPER', face: 'gSlop', rec: '99-0', taunt: 'GO AHEAD. GRAB ME.', coach: 'GO GET IT, JAMES!', narr: 'ROCKS ABOUND ON THIS LUSH VOLCANIC ISLE.' },
+  { rival: 'THE GRAY JUG', face: 'gJug', rec: '142-0', taunt: "I LOOK GRABBABLE, DON'T I?", coach: "DON'T LOOK DOWN, JOHNNY!" },
   { rival: 'THE CRUMBLER', face: 'hRock', rec: '999-0', taunt: "I'M TOTALLY SOLID. TRUST ME.", coach: 'NOT THE ONIONS!' },
   { rival: 'THE GREASY ONE', face: 'hIce', rec: '???-0', taunt: "I'M NOT GREASY. HONEST.", coach: "IT'S DARK IN THERE, JOHNNY. WATCH FOR BATS!", narr: 'BATS ABOUND ON THIS LUSH VOLCANIC ISLE.' }
 ];
@@ -381,15 +381,19 @@ function nz(ac, out, o) {
 }
 const PENT = [0, 3, 5, 7, 10, 12, 15, 17, 19];
 const C_I = [0, 3, 7], C_VI = [-4, 0, 3], C_III = [3, 7, 10], C_VII = [-2, 2, 5], C_IV = [-7, -4, 0];
+const PENTM = [0, 2, 4, 7, 9, 12, 14, 16, 19];                       // major pentatonic (semitones from the tonic)
+const M_I = [0, 4, 7], M_II = [2, 5, 9], M_IV = [5, 9, 12], M_V = [7, 11, 14], M_VI = [9, 12, 16];
 const TRACKS = [
-  { name: 'TITLE', bpm: 118, root: 57, prog: [C_I, C_VI, C_III, C_VII], bass: 'off', motif: [4, -1, -1, 3, -1, 2, -1, -1, 4, -1, 5, -1, 4, -1, 3, -1] },
-  { name: 'V0 WARM-UP', bpm: 124, root: 50, prog: [C_I, C_VII, C_VI, C_VII], bass: 'off', motif: [0, -1, 2, -1, 3, -1, 2, -1, 0, -1, 2, -1, 4, -1, 3, -1] },
-  { name: 'V1 COMP NIGHT', bpm: 130, root: 52, prog: [C_I, C_VI, C_IV, C_VII], bass: 'off', motif: [5, -1, 4, 3, -1, 2, -1, 3, 4, -1, 5, -1, 6, -1, 5, 4] },
-  { name: 'V2 ONION PATCH', bpm: 136, root: 48, prog: [C_I, C_I, C_VI, C_VII], bass: 'roll', motif: [3, -1, 3, 5, -1, 3, 2, -1, 3, -1, 5, 6, -1, 5, 3, -1] },
-  { name: 'DEEP MIX', bpm: 140, root: 42, prog: [C_I, C_I, C_VII, C_VI], bass: 'roll', dark: true, motif: [0, -1, -1, 0, -1, 2, -1, -1, 3, -1, -1, 2, -1, 0, -1, -1] }
+  // style decides the whole rhythm section. 'house' (default) is the original four-on-the-floor Deep Mix.
+  { name: 'TITLE', style: 'adventure', bpm: 112, root: 55, gain: 3.1, prog: [M_I, M_V, M_VI, M_IV] },
+  { name: 'V0 WARM-UP', style: 'funk', bpm: 100, root: 48, gain: 2.3, prog: [M_I, M_VI, M_IV, M_V] },
+  { name: 'V1 COMP NIGHT', style: 'breaks', bpm: 132, root: 45, gain: 1.7, prog: [C_I, C_VI, C_IV, C_VII], motif: [5, -1, 4, 3, -1, 2, -1, 3, 4, -1, 5, -1, 6, -1, 5, 4] },
+  { name: 'V2 ONION PATCH', style: 'wonk', bpm: 96, root: 41, gain: 1.8, prog: [C_I, C_I, C_VI, C_VII] },
+  { name: 'DEEP MIX', bpm: 140, root: 42, prog: [C_I, C_I, C_VII, C_VI], bass: 'roll', dark: true, motif: [0, -1, -1, 0, -1, 2, -1, -1, 3, -1, -1, 2, -1, 0, -1, -1] },
+  { name: 'VICTORY', style: 'chimes', bpm: 78, root: 60, gain: 2.2, prog: [M_I, M_VI, M_IV, M_V] }
 ];
 const ARPSEQ = [0, 1, 2, 3, 2, 1, 2, 3, 0, 1, 2, 3, 2, 1, 2, 3];
-function playStep(ac, d, T, g, t) {
+function playHouse(ac, d, T, g, t) {
   const sd = 60 / T.bpm / 4, st = g % 16, bar = Math.floor(g / 16) % 32;
   const chord = T.prog[bar % 4], root = T.root;
   const brk = bar >= 24 && bar < 28, build = bar >= 28, kickOn = !brk;
@@ -448,6 +452,210 @@ function playStep(ac, d, T, g, t) {
   if (build) {
     const dens = [4, 2, 2, 1][bar - 28];
     if (st % dens === 0) nz(ac, d.master, { ft: 'bandpass', f: 2200, q: 0.7, t, d: 0.1, v: 0.1 + 0.012 * st });
+  }
+}
+// ---------------- the other five styles (none of them has a four-on-the-floor kick) ----------------
+const clampBass = m => { while (m > 47) m -= 12; while (m < 33) m += 12; return m; };
+function kickSoft(ac, out, t, v, len) {
+  voice(ac, out, { type: 'sine', f: 140, f2: 46, t, d: (len || 0.22) + 0.12, v, a: 0.001, hold: 0.05 });
+  voice(ac, out, { type: 'sine', f: 56, f2: 44, t, d: (len || 0.22) + 0.2, v: v * 0.38, a: 0.004, hold: 0.06 });
+  nz(ac, out, { ft: 'highpass', f: 3000, t, d: 0.01, v: 0.1 * v });
+}
+function snare(ac, out, t, v, tone) {
+  nz(ac, out, { ft: 'bandpass', f: tone || 1900, q: 0.8, t, d: 0.16, v: 0.2 * v });
+  voice(ac, out, { type: 'triangle', f: 190, f2: 120, t, d: 0.1, v: 0.16 * v, a: 0.001 });
+}
+function rim(ac, out, t, v) {
+  voice(ac, out, { type: 'square', f: 820, f2: 700, t, d: 0.04, v: 0.09 * v, a: 0.001, lp: 2400 });
+  nz(ac, out, { ft: 'bandpass', f: 2600, q: 1.2, t, d: 0.05, v: 0.1 * v });
+}
+function hat(ac, out, t, v, open) { nz(ac, out, { ft: 'highpass', f: open ? 6500 : 8500, t, d: open ? 0.16 : 0.035, v: 0.06 * v }); }
+function bell(ac, out, t, f, v, dur) {
+  voice(ac, out, { type: 'sine', f, t, d: dur, v, a: 0.004 });
+  voice(ac, out, { type: 'triangle', f: f * 2, t, d: dur * 0.6, v: v * 0.35, a: 0.003 });
+  voice(ac, out, { type: 'sine', f: f * 2.76, t, d: dur * 0.4, v: v * 0.26, a: 0.002 });
+  voice(ac, out, { type: 'sine', f: f * 5.4, t, d: dur * 0.18, v: v * 0.1, a: 0.002 });
+}
+function subUnder(ac, out, t, m, v, dur) { if (m - 12 >= 28) voice(ac, out, { type: 'sine', f: mf(m - 12), t, d: dur, v, a: 0.006 }); }
+function pluck(ac, out, t, f, v, dur, lp) {
+  voice(ac, out, { type: 'square', f, t, d: dur, v, lp: lp || 2400, lpEnd: 500, q: 1.5, a: 0.002 });
+  voice(ac, out, { type: 'triangle', f, t, d: dur * 1.2, v: v * 0.7, a: 0.002 });
+}
+
+// TITLE: bright adventure-game overworld. Arpeggio + snare + hats, a singable lead, NO kick at all.
+const MEL_TITLE = [
+  [3, -1, -1, 4, -1, 5, -1, -1, 4, -1, 3, -1, 2, -1, -1, -1],
+  [4, -1, -1, 3, -1, 2, -1, -1, 1, -1, 2, -1, 3, -1, -1, -1],
+  [2, -1, -1, 3, -1, 4, -1, -1, 5, -1, 4, -1, 3, -1, -1, -1],
+  [4, -1, 3, -1, 2, -1, 1, -1, 2, -1, -1, -1, 0, -1, -1, -1]
+];
+function playAdventure(ac, d, T, g, t) {
+  const out = d.master, gn = T.gain || 1, sd = 60 / T.bpm / 4, st = g % 16, bar = Math.floor(g / 16) % 32;
+  const chord = T.prog[bar % 4], root = T.root, brk = bar >= 24 && bar < 28;
+  const V = o => voice(ac, out, Object.assign({}, o, { v: o.v * gn }));
+  if (st % 2 === 0) {
+    const k = (st / 2) % 4, n = [chord[0], chord[1], chord[2], chord[1]][k] + (st >= 8 ? 12 : 0);
+    V({ type: 'square', f: mf(root + 12 + n), t, d: sd * 1.9, v: 0.1, lp: 1900, lpEnd: 600, q: 1, a: 0.003 });
+    V({ type: 'triangle', f: mf(root + 24 + n), t, d: sd * 1.5, v: 0.07, a: 0.003 });
+  }
+  if (bar >= 2) {
+    const m = clampBass(root + chord[0]), pat = { 0: 0, 6: 0, 8: 7, 12: 0 };
+    if (pat[st] !== undefined) {
+      V({ type: 'triangle', f: mf(m + pat[st]), t, d: sd * (st === 0 ? 3.4 : 2), v: 0.34 });
+      V({ type: 'sine', f: mf(m + pat[st]), t, d: sd * 2, v: 0.12 });
+      subUnder(ac, out, t, m + pat[st], 0.2 * gn, sd * (st === 0 ? 3.4 : 2));
+    }
+  }
+  if (bar >= 4 && !brk) {
+    if (st === 4 || st === 12) snare(ac, out, t, 0.5 * gn);
+    if (st % 2 === 0) hat(ac, out, t, 0.7 * gn, false);
+    if (st === 14 && bar % 2) hat(ac, out, t, 0.7 * gn, true);
+  }
+  if (bar >= 8 && bar < 24) {
+    const mi = MEL_TITLE[bar % 4][st];
+    if (mi >= 0) {
+      const f = mf(root + 12 + PENTM[mi]);
+      for (const det of [-6, 6]) V({ type: 'square', f, det, t, d: sd * 1.9, v: 0.16, lp: 3000, q: 1 });
+      if (bar >= 16) V({ type: 'triangle', f: f * 2, t, d: sd * 1.5, v: 0.1 });
+    }
+  }
+  if (bar >= 8 && st === 0) for (const n of chord) V({ type: 'triangle', f: mf(root + n + 12), t, d: sd * 15, v: 0.06, lp: 1400, a: 0.25 });
+}
+
+// V0 WARM-UP: sunny swung funk. Soft kick on 1 and the "and" of 3, rimshot backbeat, bouncy bass, electric-piano comping, marimba riff.
+const BF = [0, -1, -1, 0, -1, -1, 7, -1, 0, -1, 12, -1, -1, 7, -1, 5];
+const MEL_FUNK = [
+  [5, -1, 4, -1, 3, -1, -1, 2, -1, -1, 3, -1, 4, -1, -1, -1],
+  [4, -1, 3, -1, 2, -1, -1, 1, -1, -1, 2, -1, 3, -1, -1, -1],
+  [3, -1, 2, -1, 1, -1, -1, 0, -1, -1, 1, -1, 2, -1, -1, -1],
+  [4, -1, -1, 3, -1, 2, -1, -1, 3, -1, 4, -1, 5, -1, -1, -1]
+];
+function playFunk(ac, d, T, g, t0) {
+  const out = d.master, gn = T.gain || 1, sd = 60 / T.bpm / 4, st = g % 16, bar = Math.floor(g / 16) % 32;
+  const t = t0 + (st % 2 ? sd * 0.33 : 0);                                   // swing the off-16ths
+  const chord = T.prog[bar % 4], root = T.root, brk = bar >= 24 && bar < 28;
+  const V = o => voice(ac, out, Object.assign({}, o, { v: o.v * gn }));
+  if (!brk) {
+    if (st === 0 || st === 10) kickSoft(ac, out, t, 0.62 * gn);
+    if (st === 4 || st === 12) { if (bar < 8) rim(ac, out, t, 0.9 * gn); else snare(ac, out, t, 0.55 * gn, 2200); }
+  }
+  if (bar >= 1) hat(ac, out, t, (st % 4 === 0 ? 0.7 : 0.38) * gn, false);
+  if (bar >= 4 && st === 14 && bar % 2) hat(ac, out, t, 0.7 * gn, true);
+  if (bar >= 2 && BF[st] >= 0) {
+    const f = mf(clampBass(root + chord[0]) + BF[st]);
+    V({ type: 'sawtooth', f, t, d: sd * 1.3, v: 0.24, lp: 750, lpEnd: 220, q: 2.5 });
+    V({ type: 'sine', f, t, d: sd * 1.5, v: 0.22 });
+    subUnder(ac, out, t, clampBass(root + chord[0]) + BF[st], 0.2 * gn, sd * 1.6);
+  }
+  if (bar >= 6 && (st === 3 || st === 7 || st === 10)) for (const n of chord) {
+    V({ type: 'triangle', f: mf(root + 12 + n), t, d: sd * 1.4, v: 0.07 });
+    V({ type: 'sine', f: mf(root + 24 + n), t, d: sd * 1.1, v: 0.035 });
+  }
+  if (bar >= 8 && !brk) {
+    const mi = MEL_FUNK[bar % 4][st];
+    if (mi >= 0) pluck(ac, out, t, mf(root + 12 + PENTM[mi]), 0.2 * gn, sd * 1.6, 3400);
+  }
+}
+
+// V1 COMP NIGHT: electro breakbeat. Syncopated kick (1, "a" of 2, "and" of 3), ghost snares, 16th hats, rave stabs, minor lead.
+const KB = [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0];
+const BB = [0, -1, 0, 12, -1, 0, -1, 7, 0, -1, 12, -1, 0, -1, 10, -1];
+function playBreaks(ac, d, T, g, t) {
+  const out = d.master, gn = T.gain || 1, sd = 60 / T.bpm / 4, st = g % 16, bar = Math.floor(g / 16) % 32;
+  const chord = T.prog[bar % 4], root = T.root, brk = bar >= 24 && bar < 28, build = bar >= 28;
+  const V = o => voice(ac, out, Object.assign({}, o, { v: o.v * gn }));
+  if (!brk) {
+    if (KB[st]) kickSoft(ac, out, t, 0.85 * gn, 0.26);
+    if (bar >= 2 && (st === 4 || st === 12)) snare(ac, out, t, 0.8 * gn);
+    if (bar >= 2 && st === 15 && bar % 2) snare(ac, out, t, 0.25 * gn);
+    if (bar >= 6 && st === 9 && bar % 4 === 2) snare(ac, out, t, 0.25 * gn);
+    if (bar >= 1) hat(ac, out, t, (st % 4 === 2 ? 0.8 : st % 2 === 0 ? 0.5 : 0.28) * gn, false);
+  }
+  if (bar >= 4) {
+    const o = BB[st];
+    if (o >= 0 && !brk) {
+      const f = mf(clampBass(root + chord[0]) + o);
+      V({ type: 'sawtooth', f, t, d: sd * 0.9, v: 0.22, lp: 900, lpEnd: 200, q: 3 });
+      if (o === 0) { V({ type: 'sine', f, t, d: sd * 1.4, v: 0.26 }); subUnder(ac, out, t, clampBass(root + chord[0]), 0.22 * gn, sd * 1.6); }
+    }
+  }
+  if (bar >= 8 && !brk && (st === 0 || st === 3 || st === 6)) for (const n of chord) for (const det of [-6, 6])
+    V({ type: 'sawtooth', f: mf(root + 24 + n), det, t, d: sd * 1.2, v: 0.045, lp: 2400, q: 1 });
+  if (bar >= 16 && bar < 24) {
+    const mi = T.motif[st];
+    if (mi >= 0) { const f = mf(root + chord[0] + 12 + PENT[mi]); for (const det of [-6, 6]) V({ type: 'square', f, det, t, d: sd * 1.7, v: 0.2, lp: 3200, q: 1 }); }
+  }
+  if (st === 0) {
+    if (brk && (bar === 24 || bar === 26)) for (const n of chord) for (const det of [-7, 7]) V({ type: 'sawtooth', f: mf(root + 12 + n), det, t, d: sd * 30, v: 0.07, lp: 1200, q: 1, a: 0.5 });
+    if (build) nz(ac, out, { ft: 'bandpass', f: 600, f2: 7000, q: 2.5, t, d: sd * 16, v: (0.07 + 0.03 * (bar - 28)) * gn });
+  }
+  if (build) { const dens = [4, 2, 2, 1][bar - 28]; if (st % dens === 0) nz(ac, out, { ft: 'bandpass', f: 2200, q: 0.7, t, d: 0.1, v: (0.1 + 0.012 * st) * gn }); }
+}
+
+// V2 ONION PATCH: creepy-quirky half-time wonk. The kick only hits once or twice a bar, big snare on 3, wah bass, plucky tritone riff, bells.
+const WB = [0, -1, -1, 0, -1, -1, 7, -1, -1, -1, 5, -1, 3, -1, -1, -1];
+const MEL_WONK = [
+  [0, -1, 3, -1, 6, -1, 5, -1, 3, -1, 0, -1, -1, -1, -1, -1],
+  [0, -1, 3, -1, 7, -1, 6, -1, 5, -1, 3, -1, -1, -1, -1, -1],
+  [3, -1, 5, -1, 8, -1, 7, -1, 5, -1, 3, -1, 5, -1, -1, -1],
+  [7, -1, 6, -1, 5, -1, 3, -1, 6, -1, 5, -1, 3, -1, 0, -1]
+];
+function playWonk(ac, d, T, g, t) {
+  const out = d.master, gn = T.gain || 1, sd = 60 / T.bpm / 4, st = g % 16, bar = Math.floor(g / 16) % 32;
+  const chord = T.prog[bar % 4], root = T.root, brk = bar >= 24 && bar < 28;
+  const V = o => voice(ac, out, Object.assign({}, o, { v: o.v * gn }));
+  if (!brk) {
+    if (st === 0 || st === 11 || (bar % 2 === 1 && st === 14)) kickSoft(ac, out, t, 0.7 * gn, 0.24);
+    if (st === 8) snare(ac, out, t, 0.85 * gn, 1500);
+    if (bar >= 4 && (st === 4 || st === 12)) rim(ac, out, t, 0.35 * gn);
+    if (bar >= 2 && st % 4 === 2) hat(ac, out, t, 0.45 * gn, false);
+  }
+  if (bar >= 1 && WB[st] >= 0) {
+    const f = mf(clampBass(root + chord[0]) + WB[st]);
+    V({ type: 'sawtooth', f, t, d: sd * 2.4, v: 0.3, lp: 1100, lpEnd: 110, q: 6 });
+    V({ type: 'sine', f, t, d: sd * 2.2, v: 0.24 });
+    subUnder(ac, out, t, clampBass(root + chord[0]) + WB[st], 0.2 * gn, sd * 2.4);
+  }
+  if (bar >= 4) {
+    const o = MEL_WONK[bar % 4][st];
+    if (o >= 0) pluck(ac, out, t, mf(root + 24 + o), 0.22 * gn, sd * 0.9, 2200);
+  }
+  if (bar >= 12 && st === 0 && bar % 4 === 0) bell(ac, out, t, mf(root + 36 + chord[1]), 0.12 * gn, sd * 8);
+  if (bar >= 8 && st === 0) for (const n of chord) for (const det of [-9, 9]) V({ type: 'sawtooth', f: mf(root + 12 + n), det, t, d: sd * 15, v: 0.045, lp: 700, q: 1, a: 0.5 });
+}
+
+// VICTORY: gentle music-box chimes. No drums, no kick, slow. Plays on the ending screen.
+const MEL_WIN = [
+  [5, -1, -1, -1, 4, -1, -1, -1, 3, -1, -1, -1, 4, -1, -1, -1],
+  [4, -1, -1, -1, 3, -1, -1, -1, 2, -1, -1, -1, 3, -1, -1, -1],
+  [3, -1, -1, -1, 2, -1, -1, -1, 1, -1, -1, -1, 2, -1, 3, -1],
+  [4, -1, -1, -1, 3, -1, -1, -1, 5, -1, -1, -1, -1, -1, -1, -1]
+];
+function playChimes(ac, d, T, g, t) {
+  const out = d.master, gn = T.gain || 1, sd = 60 / T.bpm / 4, st = g % 16, bar = Math.floor(g / 16) % 32;
+  const chord = T.prog[bar % 4], root = T.root;
+  const V = o => voice(ac, out, Object.assign({}, o, { v: o.v * gn }));
+  if (st % 2 === 0) {
+    const idx = [0, 1, 2, 3, 2, 1, 2, 1][st / 2], n = idx === 3 ? chord[0] + 12 : chord[idx];
+    bell(ac, out, t, mf(root + 12 + n), 0.12 * gn, sd * 5);
+  }
+  if (bar >= 1) {
+    const mi = MEL_WIN[bar % 4][st];
+    if (mi >= 0) bell(ac, out, t, mf(root + 24 + PENTM[mi]), 0.17 * gn, sd * 8);
+  }
+  if (st === 0) {
+    for (const n of chord) V({ type: 'triangle', f: mf(root + n), t, d: sd * 16, v: 0.05, lp: 1100, a: 0.6 });
+    V({ type: 'sine', f: mf(clampBass(root + chord[0]) - 12 + 12), t, d: sd * 12, v: 0.2, a: 0.05 });
+  }
+}
+function playStep(ac, d, T, g, t) {
+  switch (T.style) {
+    case 'adventure': return playAdventure(ac, d, T, g, t);
+    case 'funk': return playFunk(ac, d, T, g, t);
+    case 'breaks': return playBreaks(ac, d, T, g, t);
+    case 'wonk': return playWonk(ac, d, T, g, t);
+    case 'chimes': return playChimes(ac, d, T, g, t);
+    default: return playHouse(ac, d, T, g, t);
   }
 }
 let mStep = 0, mNext = 0, mTrack = 0;
@@ -739,7 +947,9 @@ function wy(y) { return (G.camY + VH - y) * u; }
 
 const BTN = {
   chalk: () => ({ x: CW * 0.035, y: CH - CW * 0.2, w: CW * 0.34, h: CW * 0.15 }),
-  mute: () => ({ x: CW - CW * 0.14, y: CH - CW * 0.17, w: CW * 0.11, h: CW * 0.11 })
+  mute: () => ({ x: CW - CW * 0.14, y: CH - CW * 0.17, w: CW * 0.11, h: CW * 0.11 }),
+  howto: () => ({ x: CW * 0.2, y: CH * 0.876, w: CW * 0.6, h: CH * 0.052 }),
+  close: () => ({ x: CW - CW * 0.17, y: CH * 0.012, w: CW * 0.15, h: CW * 0.11 })
 };
 const inRect = (r, x, y) => x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
 
@@ -747,10 +957,16 @@ function toggleMute() { muted = !muted; if (!muted) { audioInit(); SFX.blip(); }
 
 function onTap(px, py) {
   audioInit();
-  if (inRect(BTN.mute(), px, py) && G.state !== 'title' && G.state !== 'boot' && G.state !== 'card') { toggleMute(); return; }
+  if (inRect(BTN.mute(), px, py) && G.state !== 'title' && G.state !== 'boot' && G.state !== 'card' && G.state !== 'howto') { toggleMute(); return; }
   switch (G.state) {
     case 'boot': setTrack(0); G.state = 'title'; G.titleT = 0; break;
-    case 'title': G.score = 0; G.totalFalls = 0; startRoute(0); SFX.pick(); break;
+    case 'title':
+      if (inRect(BTN.howto(), px, py)) { G.state = 'howto'; G.howPage = 0; SFX.blip(); break; }
+      G.score = 0; G.totalFalls = 0; startRoute(0); SFX.pick(); break;
+    case 'howto':
+      if (inRect(BTN.close(), px, py)) { G.state = 'title'; SFX.blip(); break; }
+      G.howPage++; if (G.howPage >= HOWTO.length) G.state = 'title'; else SFX.blip();
+      break;
     case 'card': if (G.cardT > 0.5) cardAdvance(); break;
     case 'ad': advanceAd(); break;
     case 'end': if (G.endT > 1.2) { G.state = 'title'; G.titleT = 0; setTrack(0); } break;
@@ -779,7 +995,7 @@ cv.addEventListener('touchstart', e => e.preventDefault(), { passive: false });
 
 function confirmKey() {
   audioInit();
-  if (G.state === 'boot' || G.state === 'title' || G.state === 'card' || G.state === 'ad' || G.state === 'end' || G.state === 'win') { onTap(CW / 2, CH / 2); return; }
+  if (G.state === 'boot' || G.state === 'title' || G.state === 'howto' || G.state === 'card' || G.state === 'ad' || G.state === 'end' || G.state === 'win') { onTap(CW / 2, CH / 2); return; }
   if (G.state !== 'climb') return;
   if (P.mode === 'lie') { if (G.retry) startRoute(G.routeIdx, true); return; }
   if (P.mode !== 'hang') return;
@@ -799,6 +1015,8 @@ window.addEventListener('keydown', e => {
   } else if (k === ' ' || k === 'Enter' || k === 'z' || k === 'Z') { e.preventDefault(); confirmKey(); }
   else if (k === 'c' || k === 'C' || k === 'x' || k === 'X') { if (G.state === 'climb') doChalk(); }
   else if (k === 'm' || k === 'M') toggleMute();
+  else if ((k === 'h' || k === 'H') && G.state === 'title') { G.state = 'howto'; G.howPage = 0; SFX.blip(); }
+  else if (k === 'Escape' && G.state === 'howto') { G.state = 'title'; }
 });
 let padPrev = {};
 function pollPad() {
@@ -1286,6 +1504,60 @@ function drawBoot() {
   if (Math.floor(G.t * 2) % 2 === 0) text('TAP TO START', CW / 2, CH * 0.5, CW * 0.075, '#d9f99d');
   text('SOUND ON', CW / 2, CH * 0.56, CW * 0.035, '#8b87b0');
 }
+const HOWTO = [
+  { title: 'HOW TO CLIMB', rows: [
+    { icon: 'hJug', name: 'LIME HOLDS', text: 'FOLLOW THESE. TAP ONE TO REACH IT. ON A KEYBOARD, USE THE ARROWS, THEN SPACE.' },
+    { icon: 'hGold', name: 'GOLD HOLD', text: 'IT SITS AT THE TOP. GRAB IT AND HANG ON FOR A SECOND TO SEND THE ROUTE.' },
+    { icon: 'gSlop', name: 'GRAY HOLDS', text: 'THESE ARE OFF-ROUTE. YOU CAN GRAB THEM, BUT THEY BURN YOUR GRIP FAST.' },
+    { icon: 'pkChalk', name: 'GRIP AND CHALK', text: 'GRIP DRAINS AS YOU HANG. AT ZERO YOU FALL. CHALK UP (C) REFILLS IT.' },
+    { icon: 'dyno', name: 'BIG JUMPS', text: 'A LONG REACH IS A JUMP. IT COSTS GRIP, SO DO NOT JUMP WHEN YOU ARE TIRED.' }
+  ] },
+  { title: 'TYPES OF HOLDS', rows: [
+    { icon: 'hJug', name: 'JUG', text: 'BIG AND EASY. A GOOD PLACE TO HANG.' },
+    { icon: 'hRail', name: 'CRIMP', text: 'SMALL AND HARSH. IT DRAINS GRIP FASTER.' },
+    { icon: 'hIce', name: 'GREASY', text: 'ICE-SLICK. IT DRAINS GRIP FAST, SO DO NOT STAY.' },
+    { icon: 'hRock', name: 'CRUMBLY', text: 'IT BREAKS IF YOU HANG ON TOO LONG. KEEP MOVING.' },
+    { icon: 'hRest', name: 'REST HOLD', text: 'NO DRAIN AT ALL. CATCH YOUR BREATH.' }
+  ] },
+  { title: 'PICKUPS AND DANGER', rows: [
+    { icon: 'pkChalk', name: 'CHALK BLOCK', text: 'TAKE IT! YOU GET ONE MORE CHALK.' },
+    { icon: 'pkPuff', name: 'HOT AIR', text: 'YOUR NEXT JUMP IS FREE AND GOES FARTHER.' },
+    { icon: 'hzFloppy', name: 'FALLING STUFF', text: 'DISKS, MUGS, SHOES, BOTTLES. A WARNING TRIANGLE SHOWS THE LANE.' },
+    { icon: 'hzOnion', name: 'ONIONS', text: 'A BIGGER HIT, AND YOU CRY. DAVE HATES ONIONS.' },
+    { icon: 'hzBatOpen', name: 'BATS', text: 'THEY SWOOP IN FROM THE SIDE IN THE DEEP MIX.' }
+  ] },
+  { title: 'GOOD TO KNOW', rows: [
+    { icon: 'lying', name: 'FALLING IS FINE', text: 'THE MAT IS SOFT. TAP TO TRY THE ROUTE AGAIN.' },
+    { icon: 'victory', name: 'CLEAN CLIMBS', text: 'FEWER FALLS AND A FASTER TIME EARN BIG BONUS POINTS.' },
+    { icon: 'daveStand', name: 'DAVE', text: 'HE IS WATCHING FROM THE MAT. HE HAS OPINIONS.' }
+  ] }
+];
+function drawHowTo() {
+  const pg = HOWTO[Math.min(G.howPage || 0, HOWTO.length - 1)];
+  ctx.fillStyle = '#0a1233'; ctx.fillRect(0, 0, CW, CH);
+  drawRays(CW / 2, CH * 0.5, G.t * 0.5, '#101c4a', '#0c1640');
+  ctx.fillStyle = '#0b0a14'; ctx.fillRect(0, 0, CW, CH * 0.105); ctx.fillStyle = '#facc15'; ctx.fillRect(0, CH * 0.105, CW, 4);
+  text(pg.title, CW / 2, CH * 0.066, CW * 0.062, '#fef08a');
+  const c = BTN.close(); ctx.fillStyle = '#7f1d1d'; ctx.fillRect(c.x, c.y + CH * 0.01, c.w, c.h); text('X', c.x + c.w / 2, c.y + CH * 0.01 + c.h * 0.74, CW * 0.06, '#fff');
+  const top = CH * 0.13, bot = CH * 0.9, n = Math.max(pg.rows.length, 5), gap = CW * 0.02, rowH = Math.min(CW * 0.3, (bot - top) / n - gap), box = rowH * 0.8;
+  pg.rows.forEach((r, i) => {
+    const y = top + i * (rowH + gap);
+    ctx.fillStyle = '#0b0a14'; ctx.fillRect(CW * 0.03 - 3, y - 3, CW * 0.94 + 6, rowH + 6);
+    ctx.fillStyle = '#17133a'; ctx.fillRect(CW * 0.03, y, CW * 0.94, rowH);
+    ctx.fillStyle = '#241d57'; ctx.fillRect(CW * 0.045, y + rowH * 0.1, box, box);
+    const im = IMG[r.icon];
+    if (im) {
+      const k = Math.min(box * 0.84 / im.width, box * 0.84 / im.height), w = im.width * k, h = im.height * k;
+      ctx.drawImage(im, Math.round(CW * 0.045 + box / 2 - w / 2), Math.round(y + rowH * 0.1 + box / 2 - h / 2), Math.round(w), Math.round(h));
+    }
+    const tx = CW * 0.045 + box + CW * 0.03, tw = CW * 0.97 - tx - CW * 0.02, fs = CW * 0.036;
+    const lines = wrap(r.text, tw, fs), blockH = CW * 0.046 + lines.length * fs * 1.3, y0 = y + (rowH - blockH) / 2;
+    text(r.name, tx, y0 + CW * 0.036, CW * 0.04, '#fde68a', 'left');
+    lines.forEach((ln, k2) => text(ln, tx, y0 + CW * 0.046 + fs * 1.0 + k2 * fs * 1.3, fs, '#fff', 'left'));
+  });
+  for (let i = 0; i < HOWTO.length; i++) { ctx.fillStyle = i === G.howPage ? '#facc15' : '#475569'; ctx.fillRect(CW / 2 - HOWTO.length * CW * 0.03 + i * CW * 0.06, CH * 0.925, CW * 0.04, CW * 0.04); }
+  if (Math.floor(G.t * 2) % 2 === 0) text(G.howPage >= HOWTO.length - 1 ? 'TAP TO CLOSE' : 'TAP FOR NEXT', CW / 2, CH * 0.972, CW * 0.04, '#d9f99d');
+}
 function drawTitle() {
   const t = G.titleT, k = Math.min(1, t / 0.4);
   ctx.fillStyle = '#0a1233'; ctx.fillRect(0, 0, CW, CH);
@@ -1296,7 +1568,8 @@ function drawTitle() {
   // mat strip + venue
   ctx.fillStyle = '#1d4ed8'; ctx.fillRect(0, CH * 0.86, CW, CH * 0.14);
   ctx.fillStyle = '#3b82f6'; ctx.fillRect(0, CH * 0.86, CW, Math.max(3, CW * 0.008));
-  text('HUSTON BOULDERS', CW / 2, CH * 0.925, CW * 0.04, '#bfdbfe', 'center', '#1e3a8a');
+  text('HUSTON BOULDERS', CW / 2, CH * 0.972, CW * 0.032, '#bfdbfe', 'center', '#1e3a8a');
+  { const b = BTN.howto(); ctx.fillStyle = '#0b0a14'; ctx.fillRect(b.x - 4, b.y - 4, b.w + 8, b.h + 8); ctx.fillStyle = '#facc15'; ctx.fillRect(b.x, b.y, b.w, b.h); ctx.fillStyle = '#fde68a'; ctx.fillRect(b.x, b.y, b.w, b.h * 0.4); text('HOW TO PLAY', b.x + b.w / 2, b.y + b.h * 0.7, CW * 0.044, '#1c1917', 'center', '#fde68a'); }
   // Johnny
   const im = IMG.titleJ, sc = (CH * 0.36) / im.height, bob = Math.sin(G.t * 3) * 4;
   ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.beginPath(); ctx.ellipse(CW / 2, CH * 0.43 + im.height * sc - 2, im.width * sc * 0.42, CH * 0.012, 0, 0, Math.PI * 2); ctx.fill();
@@ -1596,6 +1869,7 @@ function render() {
   if (G.state === 'loading') { ctx.fillStyle = '#1b1830'; ctx.fillRect(0, 0, CW, CH); text('LOADING...', CW / 2, CH / 2, CW * 0.06, '#d9f99d'); return; }
   if (G.state === 'boot') { drawBoot(); return; }
   if (G.state === 'title') { drawTitle(); return; }
+  if (G.state === 'howto') { drawHowTo(); return; }
   if (G.state === 'card') { drawCard(); return; }
   if (G.state === 'ad') { drawAd(); return; }
   if (G.state === 'end') { drawEnd(); return; }
@@ -1615,7 +1889,7 @@ function render() {
   if (G.state === 'intro') {
     const R = ROUTES[G.routeIdx];
     text('READY...', CW / 2, CH * 0.3, CW * 0.075, '#fff');
-    if (G.routeIdx === 0) { text('FOLLOW THE LIME HOLDS', CW / 2, CH * 0.44, CW * 0.05, '#d9f99d'); text('GRAY HOLDS ARE FAKES', CW / 2, CH * 0.49, CW * 0.04, '#fca5a5'); }
+    if (G.routeIdx === 0) { text('FOLLOW THE LIME HOLDS', CW / 2, CH * 0.44, CW * 0.05, '#d9f99d'); text('GRAY HOLDS ARE OFF-ROUTE', CW / 2, CH * 0.49, CW * 0.04, '#fca5a5'); }
     if (G.routeIdx === 2) text('NO GLOW. READ THE WALL.', CW / 2, CH * 0.44, CW * 0.05, '#fde68a');
     if (G.routeIdx === 3) { text('GRIP DRAINS FASTER.', CW / 2, CH * 0.44, CW * 0.05, '#fde68a'); text('WATCH FOR BATS.', CW / 2, CH * 0.49, CW * 0.045, '#c4b5fd'); }
   }
@@ -1631,10 +1905,8 @@ function advanceAd() {
   else finishGame();
 }
 function finishGame() {
-  G.state = 'end'; G.endT = 0; setTrack(0);
-  let name = 'JAM';
-  try { name = (prompt('NEW SCORE ' + G.score + '! ENTER 3 INITIALS', 'JAM') || 'JAM').toUpperCase().slice(0, 3); } catch (e) {}
-  G.best.push({ n: name, s: G.score });
+  G.state = 'end'; G.endT = 0; setTrack(5);
+  G.best.push({ n: 'JAM', s: G.score });
   G.best.sort((a, b) => b.s - a.s); G.best = G.best.slice(0, 5);
   try { localStorage.setItem(BEST_KEY, JSON.stringify(G.best)); } catch (e) {}
 }
