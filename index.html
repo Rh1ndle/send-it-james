@@ -861,7 +861,7 @@ function playVoice(key) {
   const b = VOICE[key];
   if (!AC || muted || AC.state !== 'running' || !b) return false;
   const src = AC.createBufferSource(); src.buffer = b;
-  const g = AC.createGain(); g.gain.value = 0.55; src.connect(g); g.connect(SFXBUS); src.start();
+  const g = AC.createGain(); g.gain.value = 0.30; src.connect(g); g.connect(SFXBUS); src.start();   // 0.55 was ~2x the (ducked) music; 0.30 sits level with it
   AUD.voicePlays = (AUD.voicePlays || 0) + 1;
   if (MASTER) {   // duck the music for a beat so the one special clip is heard clearly
     const t = AC.currentTime, g0 = MASTER.gain.value;
