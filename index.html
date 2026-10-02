@@ -38,7 +38,7 @@ const ADS = [
   { foot: 'OFFER VOID WHERE PROHIBITED AND ALSO WHERE ALLOWED', kind: 'tv', brand: 'HUSTON BOULDERS', inside: 'adGuy', shake: true, burst: ['AS SEEN', 'ON TV!'], price: ['VALUE!'],
     text: 'WE BELIEVE IN VALUE, AND WE PASS IT ON TO YOU. AT HUSTON BOULDERS, WE FIX YOUR GRIP RIGHT AND WE GUARANTEE IT TOO. WE PUT THE YEEEEEHAW BACK IN YOUR FOREARMS AND TRANSMISSION!' },
   { foot: 'SEE STORE FOR DETAILS (WE DO NOT HAVE A STORE)', kind: 'tv', brand: 'CHALK-FI PRO\u2122', inside: 'adTub', burst: ['NOW WITH', 'BLUETOOTH!'], price: ['ONLY', '$19.99'],
-    text: 'PERFECT FOR YOUR ACTIVE AND CONNECTED LIFESTYLE. NOW WITH BLUETOOTH. SIDE EFFECTS INCLUDE FALLING, REGRET, AND MILD ANAL FISSURES.' },
+    text: 'PERFECT FOR YOUR ACTIVE AND CONNECTED LIFESTYLE. NOW WITH BLUETOOTH! SIDE EFFECTS INCLUDE FALLING, REGRET, AND MILD ANAL FISSURES.' },
   { foot: 'NOT AVAILABLE IN SACTOWN OR THE SHUG', kind: 'merchant', brand: 'HUSTON BOULDERS: MEMORIAL CITY',
     text: "MEMORIAL CITY.. IT'S THE PLACE TO BE! OLD SHOES FOR NEW. OLD JEANS FOR NEW. OLD PHONES FOR NEW. OLD LAMPS FOR NEW! ALL UNDER ONE ROOF!" }
 ];
@@ -52,13 +52,17 @@ const REACH = 84;            // normal reach (units)
 const DYNO = 150;            // dyno range
 const DYNO_HOT = 215;        // dyno range with hot air
 const MAT_TOP = 30;
+// ---- BREATHING ROOM: how many extra units of mat show between the characters' feet and the bottom bar at the start of a route. 0 = as before. ?room=0..14 overrides.
+const ROOM_DEFAULT = 0;
+const ROOM = (() => { const m = /[?&]room=(\d{1,2})\b/.exec(location.search); return m ? Math.min(14, +m[1]) : ROOM_DEFAULT; })();
+const CAM_FLOOR = -6 - ROOM;
 const BEST_KEY = 'sendItJames.best.v1';
 
 const CARDS = [
   { rival: 'THE GRAY SLOPER', face: 'enSloper', rec: '99-0', taunt: 'GO AHEAD. GRAB ME.', coach: 'GO GET IT, JAMES!', narr: 'ROCKS ABOUND ON THIS LUSH VOLCANIC ISLE..' },
   { rival: 'THE GRAY JUG', face: 'enJug', rec: '142-0', taunt: "I LOOK GRABBABLE, DON'T I?", coach: "DON'T LOOK DOWN, JOHNNY!" },
   { rival: 'THE CRUMBLER', face: 'enCrumbler', rec: '999-0', taunt: "I'M TOTALLY SOLID. TRUST ME.", coach: 'NOT THE ONIONS!' },
-  { rival: 'THE GREASY ONE', face: 'enGreasy', rec: '???-0', taunt: "I'M NOT GREASY. HONEST.", coach: "IT'S DARK IN THERE, JOHNNY. WATCH FOR BATS!", narr: 'BATS ABOUND ON THIS LUSH VOLCANIC ISLE..' }
+  { rival: 'THE GREASY ONE', face: 'enGreasy', rec: '???-0', taunt: "I'M NOT GREASY. HONEST.", coach: "IT'S DARK IN THERE, JOHNNY, AND THE MIX IS DEEP. WATCH FOR BATS!", narr: 'BATS ABOUND ON THIS LUSH VOLCANIC ISLE..' }
 ];
 
 const ROUTES = [
@@ -301,17 +305,27 @@ function drawDave(x, yBase, say) {
 //  Audio (square-wave bleeps + tiny techno loop)
 // ============================================================
 let AC = null, muted = false, musicOn = false, MASTER = null, DUCK = null, SFXBUS = null;
+// ---- BASS LEVEL ---------------------------------------------------------------------------
+// 0 = the old boomy mix, 1 = a touch less, 2 = DEFAULT (cuts the deep rumble), 3 = leaner still.  ?bass=0..3 in the address overrides it for one visit.
+const BASS_LEVEL = 2;
+const BASS_TABLE = [ { loG: 5.5, loF: 140, drive: 1.25, ratio: 5, hp: 0 }, { loG: 1, loF: 140, drive: 1.1, ratio: 4, hp: 50 }, { loG: 0, loF: 140, drive: 1.1, ratio: 4, hp: 60 }, { loG: -1, loF: 160, drive: 1.1, ratio: 4, hp: 70 } ];
+const BASS_IDX = (() => { const m = /[?&]bass=([0-3])\b/.exec(location.search); return m ? +m[1] : BASS_LEVEL; })();
+const BASS = BASS_TABLE[BASS_IDX];
+const VOICE_GAIN = [0.30, 0.26, 0.245, 0.23];   // music drops ~1.3 / 1.8 / 2.2 dB at levels 1 / 2 / 3, so the clip comes down with it
+// -------------------------------------------------------------------------------------------
 function buildChain(ac) {
   // low shelf up, high shelf down, soft saturation so the sub is audible on small speakers too
-  const lo = ac.createBiquadFilter(); lo.type = 'lowshelf'; lo.frequency.value = 140; lo.gain.value = 5.5;
+  const lo = ac.createBiquadFilter(); lo.type = 'lowshelf'; lo.frequency.value = BASS.loF; lo.gain.value = BASS.loG;
   const hi = ac.createBiquadFilter(); hi.type = 'highshelf'; hi.frequency.value = 5500; hi.gain.value = -1;
   const sat = ac.createWaveShaper(); const cv = new Float32Array(1024);
-  for (let i = 0; i < 1024; i++) { const x = i / 512 - 1; cv[i] = Math.tanh(x * 1.25) / Math.tanh(1.25); }
+  for (let i = 0; i < 1024; i++) { const x = i / 512 - 1; cv[i] = Math.tanh(x * BASS.drive) / Math.tanh(BASS.drive); }
   sat.curve = cv;
   const comp = ac.createDynamicsCompressor();
-  comp.threshold.value = -16; comp.knee.value = 12; comp.ratio.value = 5; comp.attack.value = 0.003; comp.release.value = 0.2;
+  comp.threshold.value = -16; comp.knee.value = 12; comp.ratio.value = BASS.ratio; comp.attack.value = 0.003; comp.release.value = 0.2;
   const master = ac.createGain(); master.gain.value = 0.18;
-  master.connect(lo); lo.connect(hi); hi.connect(sat); sat.connect(comp); comp.connect(ac.destination);
+  let tail = master;
+  if (BASS.hp) { const h = ac.createBiquadFilter(); h.type = 'highpass'; h.frequency.value = BASS.hp; h.Q.value = 0.7; master.connect(h); tail = h; }   // rumble filter
+  tail.connect(lo); lo.connect(hi); hi.connect(sat); sat.connect(comp); comp.connect(ac.destination);
   const duck = ac.createGain(); duck.gain.value = 1; duck.connect(master);
   const sfx = ac.createGain(); sfx.gain.value = 0.8; sfx.connect(comp);
   return { master, duck, sfx };
@@ -851,7 +865,7 @@ function startRoute(i, retry, skipCard) {
   G.time = 0; G.haz = []; G.parts = []; G.hazT = 4; G.retry = false; G.maxId = 0; G.batSaid = false;
   if (!retry) { G.routeFalls = 0; G.voiceUsed = false; }
   G.state = (retry || skipCard) ? 'intro' : 'card'; G.introT = 0; G.cardT = 0; G.cardTT = 0; G.cardStage = 0; G.cap = null; G.capQ = []; G.daveSay = null; G.restPending = null;
-  G.camY = -6;
+  G.camY = CAM_FLOOR;
   if (!retry) setTrack(1 + i);
 }
 
@@ -875,7 +889,7 @@ function playVoice(key) {
   const b = VOICE[key];
   if (!AC || muted || AC.state !== 'running' || !b) return false;
   const src = AC.createBufferSource(); src.buffer = b;
-  const g = AC.createGain(); g.gain.value = 0.30; src.connect(g); g.connect(SFXBUS); src.start();   // 0.55 was ~2x the (ducked) music; 0.30 sits level with it
+  const g = AC.createGain(); g.gain.value = VOICE_GAIN[BASS_IDX]; src.connect(g); g.connect(SFXBUS); src.start();   // tracks the bass setting so the voice stays level with the music (0.30 was right for the old, louder mix)
   AUD.voicePlays = (AUD.voicePlays || 0) + 1;
   if (MASTER) {   // duck the music for a beat so the one special clip is heard clearly
     const t = AC.currentTime, g0 = MASTER.gain.value;
@@ -1257,10 +1271,10 @@ function updateClimb(dt) {
   }
 
   // camera
-  const targetBottom = (P.mode === 'fall' || P.mode === 'lie') ? Math.min(G.camY, Math.max(-6, P.fy - VH * 0.3)) : P.y - VH * 0.34;
+  const targetBottom = (P.mode === 'fall' || P.mode === 'lie') ? Math.min(G.camY, Math.max(CAM_FLOOR, P.fy - VH * 0.3)) : P.y - VH * 0.34;
   const maxBottom = G.topY + 70 - VH;
-  let tb = Math.max(-6, Math.min(Math.max(maxBottom, -6), targetBottom));
-  if (P.mode === 'fall') tb = Math.max(-6, Math.min(Math.max(maxBottom, -6), P.fy - VH * 0.3));
+  let tb = Math.max(CAM_FLOOR, Math.min(Math.max(maxBottom, CAM_FLOOR), targetBottom));
+  if (P.mode === 'fall') tb = Math.max(CAM_FLOOR, Math.min(Math.max(maxBottom, CAM_FLOOR), P.fy - VH * 0.3));
   G.camY += (tb - G.camY) * Math.min(1, dt * 5);
 }
 
@@ -1290,7 +1304,7 @@ function update(dt) {
     }
     case 'intro':
       G.introT += dt;
-      { const tb = P.y - VH * 0.34; G.camY += (Math.max(-6, tb) - G.camY) * Math.min(1, dt * 5); }
+      { const tb = P.y - VH * 0.34; G.camY += (Math.max(CAM_FLOOR, tb) - G.camY) * Math.min(1, dt * 5); }
       if (G.introT > 1.6 && !G.cap) { G.state = 'climb'; say('ENGAGE!', '#a5f3fc', 0.9, 1.3, 'engage'); SFX.pick(); }
       if (G.introT > 1.6 && G.state === 'intro') { G.state = 'climb'; }
       break;
@@ -1439,12 +1453,16 @@ function drawHolds() {
         ctx.globalAlpha = (ok ? 0.55 : 0.28) * (0.6 + pulse * 0.4);
         ctx.strokeStyle = ok ? '#ecfccb' : '#fde68a';
         ctx.lineWidth = Math.max(2, u * 0.9);
-        ctx.beginPath(); ctx.ellipse(x, y, w * 0.78, hh * 1.05, 0, 0, Math.PI * 2); ctx.stroke();
+        if (RING_PIXEL) { ctx.fillStyle = ctx.strokeStyle; pixelRing(x, y, w * 0.78, hh * 1.05, Math.max(2, Math.round(sc))); }
+        else { ctx.beginPath(); ctx.ellipse(x, y, w * 0.78, hh * 1.05, 0, 0, Math.PI * 2); ctx.stroke(); }
         ctx.globalAlpha = 1;
       }
     }
     // keyboard selection
-    if (G.sel === h) { ctx.strokeStyle = '#fff'; ctx.lineWidth = Math.max(3, u * 1.4); ctx.beginPath(); ctx.ellipse(x, y, w * 0.9, hh * 1.2, 0, 0, Math.PI * 2); ctx.stroke(); }
+    if (G.sel === h) {
+      if (RING_PIXEL) { ctx.fillStyle = '#fff'; pixelRing(x, y, w * 0.9, hh * 1.2, Math.max(2, Math.round(sc))); }
+      else { ctx.strokeStyle = '#fff'; ctx.lineWidth = Math.max(3, u * 1.4); ctx.beginPath(); ctx.ellipse(x, y, w * 0.9, hh * 1.2, 0, 0, Math.PI * 2); ctx.stroke(); }
+    }
     let shake = 0;
     if (h.type === 'crumbly' && P.hold === h && P.mode === 'hang') shake = Math.sin(G.t * 60) * u * 0.6 * Math.min(1, P.hangT / 1.2);
     ctx.drawImage(c, Math.round(x - w / 2 + shake), Math.round(y - hh / 2), Math.round(w), Math.round(hh));
@@ -1540,6 +1558,16 @@ function drawParts() {
   ctx.globalAlpha = 1;
 }
 
+// ---- TARGET RING STYLE: 'smooth' (current look) or 'pixel' (built from square blocks like the rest of the art). ?ring=pixel / ?ring=smooth overrides for one visit.
+const RING_STYLE = 'smooth';
+const RING_PIXEL = /[?&]ring=pixel\b/.test(location.search) ? true : /[?&]ring=smooth\b/.test(location.search) ? false : RING_STYLE === 'pixel';
+function pixelRing(cx, cy, rx, ry, blk) {   // an ellipse drawn as ONE unbroken line of square blocks on a grid (blk = one art pixel)
+  const seen = new Set(), per = Math.PI * (3 * (rx + ry) - Math.sqrt((3 * rx + ry) * (rx + 3 * ry))), n = Math.ceil(per / blk * 3);
+  for (let i = 0; i < n; i++) {
+    const a = i / n * Math.PI * 2, gx = Math.round((cx + Math.cos(a) * rx) / blk), gy = Math.round((cy + Math.sin(a) * ry) / blk), k = gx * 100003 + gy;
+    if (!seen.has(k)) { seen.add(k); ctx.fillRect(gx * blk - blk / 2, gy * blk - blk / 2, blk, blk); }
+  }
+}
 function hudH() { return CW * 0.23; }
 let HUDBG = null, HUDBGW = 0;
 function hudBg() {
