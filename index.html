@@ -33,7 +33,7 @@ const ENDING_MESSAGE = [
   'THANKS FOR BEING A GREAT SON.'
 ];
 const ADS = [
-  { foot: 'OFFER VOID WHERE PROHIBITED, AND ALSO WHERE ALLOWED', kind: 'tv', brand: 'HUSTON BOULDERS', inside: 'adGuy', shake: true, burst: ['AS SEEN', 'ON TV!'], price: ['VALUE!'],
+  { foot: 'OFFER VOID WHERE PROHIBITED AND ALSO WHERE ALLOWED', kind: 'tv', brand: 'HUSTON BOULDERS', inside: 'adGuy', shake: true, burst: ['AS SEEN', 'ON TV!'], price: ['VALUE!'],
     text: 'WE BELIEVE IN VALUE, AND WE PASS IT ON TO YOU. AT HUSTON BOULDERS, WE FIX YOUR GRIP RIGHT AND WE GUARANTEE IT TOO. WE PUT THE YEEEEEHAW BACK IN YOUR FOREARMS AND TRANSMISSION!' },
   { foot: 'SEE STORE FOR DETAILS (WE DO NOT HAVE A STORE)', kind: 'tv', brand: 'CHALK-FI PRO\u2122', inside: 'adTub', burst: ['NOW WITH', 'BLUETOOTH!'], price: ['ONLY', '$19.99'],
     text: 'PERFECT FOR MY ACTIVE AND CONNECTED LIFESTYLE. NOW WITH BLUETOOTH. SIDE EFFECTS INCLUDE FALLING, REGRET, AND MILD ANAL FISSURES.' },
@@ -66,7 +66,7 @@ const ROUTES = [
     types: { jug: 0.25, norm: 0.4, crimp: 0.35 }, haz: 6.0, hazTypes: ['floppy', 'mug', 'bucket', 'bottle', 'shoe'] },
   { name: 'ONION PATCH', sub: 'DAVE HATES ONIONS', n: 28, step: [48, 68], seed: 53, decoy: 0.6, wall: 'wallClean', horns: true,
     types: { norm: 0.3, crimp: 0.3, greasy: 0.2, crumbly: 0.2 }, haz: 3.8, hazTypes: ['floppy', 'mug', 'bucket', 'shoe', 'bottle', 'onion', 'onion'] },
-  { name: 'DEEP MIX', sub: 'DARKER. FASTER. WEIRDER.', n: 30, step: [44, 64], seed: 77, decoy: 0.55, wall: 'wallDark', horns: true, dark: true, drainMul: 1.35,
+  { name: 'THE DEEP MIX', sub: 'DARKER. FASTER. WEIRDER.', n: 30, step: [44, 64], seed: 77, decoy: 0.55, wall: 'wallDark', horns: true, dark: true, drainMul: 1.35,
     types: { jug: 0.15, norm: 0.35, crimp: 0.2, greasy: 0.15, crumbly: 0.15 }, haz: 3.4, hazTypes: ['bat', 'bat', 'bat', 'bottle', 'floppy', 'onion'] }
 ];
 
@@ -1044,7 +1044,6 @@ function wy(y) { return (G.camY + VH - y) * u; }
 
 const BTN = {
   chalk: () => ({ x: CW * 0.035, y: CH - CW * 0.2, w: CW * 0.34, h: CW * 0.15 }),
-  mute: () => ({ x: CW * 0.40, y: CH - CW * 0.17, w: CW * 0.11, h: CW * 0.11 }),
   howto: () => ({ x: CW * 0.2, y: CH * 0.876, w: CW * 0.6, h: CH * 0.052 }),
   music: () => ({ x: CW * 0.55, y: CH * 0.016, w: CW * 0.42, h: CH * 0.036 }),
   close: () => ({ x: CW - CW * 0.17, y: CH * 0.012, w: CW * 0.15, h: CW * 0.11 })
@@ -1056,7 +1055,6 @@ function toggleMute() { muted = !muted; if (!muted) { audioInit(); SFX.blip(); }
 function bootAdvance() { setTrack(0); G.state = 'title'; G.titleT = 0; G.bootGo = 0; G.bootHint = false; }
 function onTap(px, py) {
   audioInit();
-  if (inRect(BTN.mute(), px, py) && G.state !== 'title' && G.state !== 'boot' && G.state !== 'card' && G.state !== 'howto') { toggleMute(); return; }
   switch (G.state) {
     case 'boot':
       audioInit(); G.bootTaps = (G.bootTaps || 0) + 1;
@@ -1548,7 +1546,7 @@ function drawHUD() {
   if (P.hot) text('HOT AIR', bx + CW * 0.34, cy + CW * 0.03, CW * 0.032, '#fde68a', 'left');
   // score
   text(String(G.score).padStart(6, '0'), CW - m, m + CW * 0.045, CW * 0.055, '#fff', 'right');
-  text((G.routeIdx === ROUTES.length - 1 ? 'DEEP MIX' : 'ROUTE ' + (G.routeIdx + 1)) + '  ' + G.maxId + '/' + R.n, CW - m, m + CW * 0.09, CW * 0.032, '#a5f3fc', 'right');
+  text((G.routeIdx === ROUTES.length - 1 ? 'THE DEEP MIX' : 'ROUTE ' + (G.routeIdx + 1)) + '  ' + G.maxId + '/' + R.n, CW - m, m + CW * 0.09, CW * 0.032, '#a5f3fc', 'right');
   const t = G.time; text(Math.floor(t / 60) + ':' + String(Math.floor(t % 60)).padStart(2, '0'), CW - m, m + CW * 0.13, CW * 0.032, '#c4b5fd', 'right');
 
   // buttons (bottom)
@@ -1559,9 +1557,6 @@ function drawHUD() {
     ctx.fillStyle = '#94a3b8'; ctx.fillRect(b.x, b.y + b.h - CW * 0.015, b.w, CW * 0.015);
     ctx.globalAlpha = 1;
     text('CHALK UP', b.x + b.w / 2, b.y + b.h * 0.62, CW * 0.048, usable ? '#14102a' : '#64748b', 'center', usable ? '#fff' : '#cbd5e1');
-    const mb = BTN.mute();
-    ctx.fillStyle = 'rgba(20,16,42,0.7)'; ctx.fillRect(mb.x, mb.y, mb.w, mb.h);
-    text(muted ? 'OFF' : 'SND', mb.x + mb.w / 2, mb.y + mb.h * 0.62, CW * 0.03, '#fff');
   }
 }
 
@@ -1711,13 +1706,13 @@ function drawTitle() {
   if (t < 0.12) { ctx.fillStyle = 'rgba(255,255,255,' + (0.7 * (1 - t / 0.12)) + ')'; ctx.fillRect(0, 0, CW, CH); }
   if (t > 0.6 && Math.floor(G.t * 2) % 2 === 0) text(('ontouchstart' in window) ? 'TAP TO MAKE IT SO' : 'CLICK TO MAKE IT SO', CW / 2, CH * 0.81, CW * 0.055, '#d9f99d');
   text('FOLLOW THE LIME HOLDS', CW / 2, CH * 0.845, CW * 0.04, '#fff');
-  if (hasKeys) text('CLICK A HOLD  \u2022  C = CHALK  \u2022  OR ARROWS + SPACE', CW / 2, CH * 0.957, CW * 0.026, '#93c5fd');
+  if (hasKeys) text('LEFT-CLICK TO GRAB  \u2022  C = CHALK  \u2022  OR ARROWS + SPACE', CW / 2, CH * 0.957, CW * 0.026, '#93c5fd');
 }
 // ENEMY: painted hold monsters (ChatGPT art, face integrated into the hold). Four sprites: enSloper, enJug, enCrumbler, enGreasy.
 function enemyCanvas(key) { return IMG[key]; }
 function cardStages() {
   const C = CARDS[G.routeIdx] || CARDS[0], out = [];
-  if (C.narr) out.push({ who: 'NARRATOR', col: '#a3e635', text: C.narr, side: 'narr' });
+  if (C.narr) out.push({ who: 'ANNOUNCER', col: '#a3e635', text: C.narr, side: 'narr' });
   out.push({ who: C.rival, col: '#a78bfa', text: C.taunt, side: 'wall' });
   out.push({ who: 'DAVE', col: '#93c5fd', text: C.coach, side: 'dave' });
   return out;
