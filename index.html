@@ -260,11 +260,10 @@ function drawDave(x, yBase, say) {
   else if (P.mode === 'fall' && G.daveReact) k = 'daveConcern';        // Johnny is falling, and Dave can see him: arms out, worried
   else k = 'daveStand';
   const im = IMG[k], s = PXU * u;
-  const mb = BTN.mute();                                              // keep wide poses (seated, palms out) clear of the SND button
-  const sx = Math.round(Math.min(x * u, (mb.x - CW * 0.012) - im.width * s * 0.5)), sy = Math.round(wy(yBase));
+  const sx = Math.round(Math.min(x * u, CW - im.width * s * 0.5 - CW * 0.012)), sy = Math.round(wy(yBase));   // far right corner; wide poses stay on screen
   const w = Math.round(im.width * s), h = Math.round(im.height * s);
   ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.ellipse(sx, sy, w * 0.45, u * 2, 0, 0, Math.PI * 2); ctx.fill();
-  if (k === 'daveShout' || k === 'daveSeated') { ctx.save(); ctx.translate(sx, 0); ctx.scale(-1, 1); ctx.drawImage(im, Math.round(-w / 2), sy - h, w, h); ctx.restore(); }
+  if (k === 'daveShout' || k === 'daveSeated' || k === 'daveConcern' || k === 'daveClip') { ctx.save(); ctx.translate(sx, 0); ctx.scale(-1, 1); ctx.drawImage(im, Math.round(-w / 2), sy - h, w, h); ctx.restore(); }
   else ctx.drawImage(im, Math.round(sx - w / 2), sy - h, w, h);
   if (say) {
     ctx.save();
@@ -1011,7 +1010,7 @@ function wy(y) { return (G.camY + VH - y) * u; }
 
 const BTN = {
   chalk: () => ({ x: CW * 0.035, y: CH - CW * 0.2, w: CW * 0.34, h: CW * 0.15 }),
-  mute: () => ({ x: CW - CW * 0.14, y: CH - CW * 0.17, w: CW * 0.11, h: CW * 0.11 }),
+  mute: () => ({ x: CW * 0.40, y: CH - CW * 0.17, w: CW * 0.11, h: CW * 0.11 }),
   howto: () => ({ x: CW * 0.2, y: CH * 0.876, w: CW * 0.6, h: CH * 0.052 }),
   music: () => ({ x: CW * 0.55, y: CH * 0.016, w: CW * 0.42, h: CH * 0.036 }),
   close: () => ({ x: CW - CW * 0.17, y: CH * 0.012, w: CW * 0.15, h: CW * 0.11 })
@@ -1358,7 +1357,7 @@ function drawMatFloor() {
     ctx.fillStyle = '#3b82f6'; ctx.fillRect(0, Math.round(my), CW, Math.max(2, Math.round(u * 2)));
     ctx.fillStyle = '#1e3a8a';
     for (let i = 1; i < 6; i++) ctx.fillRect(Math.round(i * W0 / 6 * u), Math.round(my), Math.max(2, Math.round(u * 0.8)), Math.round(fy - my));
-    text('HUSTON BOULDERS', CW * 0.64, my + (fy - my) * 0.55, CW * 0.03, '#bfdbfe', 'center', '#1e3a8a');
+    text('HUSTON BOULDERS', CW * 0.71, my + (fy - my) * 0.55, CW * 0.03, '#bfdbfe', 'center', '#1e3a8a');
   }
 }
 
@@ -2064,7 +2063,7 @@ function renderMain() {
   if (G.shake > 0) ctx.translate((Math.random() - 0.5) * G.shake * u * 6, (Math.random() - 0.5) * G.shake * u * 6);
   drawWall();
   drawMatFloor();
-  drawDave(225, MAT_TOP + 3, G.daveSay);
+  drawDave(262, MAT_TOP + 3, G.daveSay);
   drawHolds();
   drawHazards();
   drawPlayer();
